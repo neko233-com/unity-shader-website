@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>边缘光 - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3>✨ 特效系统</h3>
+                    <ul>
+                        <li><a href="dissolve.html">溶解效果</a></li>
+                        <li><a href="fresnel.html">菲涅尔效果</a></li>
+                        <li><a href="rim-light.html" class="active">边缘光</a></li>
+                        <li><a href="distortion.html">扭曲效果</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1>边缘光 (Rim Light)</h1>
+                <p class="subtitle">增强物体轮廓的光照效果</p>
+
+                <div class="section">
+                    <h2>📚 原理</h2>
+                    <p>边缘光本质上是菲涅尔效应的应用，但通常会加入光源方向的考量，使效果更自然。</p>
+                    
+                    <div class="comparison-box">
+                        <div class="compare-item">
+                            <h4>无边缘光</h4>
+                            <div class="rim-demo rim-none"></div>
+                        </div>
+                        <div class="compare-item">
+                            <h4>简单边缘光</h4>
+                            <div class="rim-demo rim-simple"></div>
+                        </div>
+                        <div class="compare-item">
+                            <h4>方向性边缘光</h4>
+                            <div class="rim-demo rim-directional"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>💻 代码实现</h2>
+                    
+                    <h3>简单边缘光（基于菲涅尔）</h3>
+                    <pre class="shader-code">// Properties
+_RimColor("Rim Color", Color) = (1, 1, 1, 1)
+_RimPower("Rim Power", Range(0.5, 8)) = 3
+
+half4 frag(Varyings input) : SV_Target
+{
+    float3 N = normalize(input.normalWS);
+    float3 V = normalize(_WorldSpaceCameraPos - input.positionWS);
+    
+    // 边缘光 = 1 - N·V
+    float rim = 1.0 - saturate(dot(N, V));
+    rim = pow(rim, _RimPower);
+    
+    half4 baseColor = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv);
+    half3 finalColor = baseColor.rgb + _RimColor.rgb * rim;
+    
+    return half4(finalColor, baseColor.a);
+}</pre>
+
+                    <h3>方向性边缘光（考虑光源）</h3>
+                    <pre class="shader-code">half4 frag(Varyings input) : SV_Target
+{
+    float3 N = normalize(input.normalWS);
+    float3 V = normalize(_WorldSpaceCameraPos - input.positionWS);
+    float3 L = normalize(_MainLightPosition.xyz);
+    
+    // 基础菲涅尔
+    float rim = 1.0 - saturate(dot(N, V));
+    rim = pow(rim, _RimPower);
+    
+    // 只在背光面显示边缘光
+    float NdotL = dot(N, L);
+    float rimMask = smoothstep(-0.1, 0.3, -NdotL); // 背光遮罩
+    
+    rim *= rimMask;
+    
+    half4 baseColor = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv);
+    half3 finalColor = baseColor.rgb + _RimColor.rgb * rim * _MainLightColor.rgb;
+    
+    return half4(finalColor, baseColor.a);
+}</pre>
+
+                    <h3>脉冲边缘光（动画效果）</h3>
+                    <pre class="shader-code">// 使用时间做脉冲
+float pulse = sin(_Time.y * _PulseSpeed) * 0.5 + 0.5;
+float rim = 1.0 - saturate(dot(N, V));
+rim = pow(rim, _RimPower) * pulse;
+
+half3 finalColor = baseColor.rgb + _RimColor.rgb * rim;</pre>
+                </div>
+
+                <div class="section">
+                    <h2>🎮 应用场景</h2>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>👤 角色高亮</h3>
+                            <p>选中、悬停、被击中时的高亮</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🌙 月光轮廓</h3>
+                            <p>黑夜场景的物体轮廓</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🔮 魔法效果</h3>
+                            <p>能力激活、施法状态</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🎨 卡通渲染</h3>
+                            <p>增强卡通风格的深度感</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>🆚 边缘光 vs 描边</h2>
+                    
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>特性</th>
+                                <th>边缘光 (Rim Light)</th>
+                                <th>描边 (Outline)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>实现方式</td>
+                                <td>片段着色器内计算</td>
+                                <td>额外 Pass 或后处理</td>
+                            </tr>
+                            <tr>
+                                <td>性能</td>
+                                <td>✅ 轻量</td>
+                                <td>需要额外渲染</td>
+                            </tr>
+                            <tr>
+                                <td>效果</td>
+                                <td>柔和发光</td>
+                                <td>锐利线条</td>
+                            </tr>
+                            <tr>
+                                <td>应用</td>
+                                <td>光照效果</td>
+                                <td>卡通/选中高亮</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+
+    <style>
+        .rim-demo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 10px auto;
+        }
+        .rim-none {
+            background: radial-gradient(circle at 30% 30%, #666, #333);
+        }
+        .rim-simple {
+            background: radial-gradient(circle at 30% 30%, #666, #333);
+            box-shadow: 0 0 15px 3px rgba(100, 200, 255, 0.6);
+        }
+        .rim-directional {
+            background: radial-gradient(circle at 30% 30%, #666, #333);
+            box-shadow: -5px 5px 15px 3px rgba(100, 200, 255, 0.6);
+        }
+    </style>
+</body>
+</html>

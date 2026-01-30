@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lambert 漫反射 - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="搜索内容...">
+                    <button id="searchBtn">🔍</button>
+                </div>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3>🚀 入门指南</h3>
+                    <ul>
+                        <li><a href="00-introduction.html">教程介绍</a></li>
+                        <li><a href="01-urp-overview.html">URP 概述</a></li>
+                        <li><a href="02-shader-basics.html">Shader 基础</a></li>
+                        <li><a href="03-terminology.html">术语与黑话</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>🔄 渲染流程</h3>
+                    <ul>
+                        <li><a href="urp-rendering-pipeline.html">URP 渲染管线</a></li>
+                        <li><a href="rendering-stages.html">渲染阶段详解</a></li>
+                        <li><a href="pass-types.html">Pass 类型</a></li>
+                        <li><a href="render-features.html">Render Features</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>📐 坐标空间</h3>
+                    <ul>
+                        <li><a href="coordinate-spaces.html">坐标系概述</a></li>
+                        <li><a href="object-space.html">模型空间详解</a></li>
+                        <li><a href="world-space.html">世界空间详解</a></li>
+                        <li><a href="view-space.html">观察空间详解</a></li>
+                        <li><a href="clip-space.html">裁剪空间详解</a></li>
+                        <li><a href="screen-space.html">屏幕空间详解</a></li>
+                        <li><a href="tangent-space.html">切线空间详解</a></li>
+                        <li><a href="mvp-matrix.html">MVP 矩阵详解</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>🎨 UV 变换</h3>
+                    <ul>
+                        <li><a href="rotate-uv.html">RotateUV - 旋转矩阵</a></li>
+                        <li><a href="uv-scroll.html">UV 滚动</a></li>
+                        <li><a href="uv-scale.html">UV 缩放</a></li>
+                        <li><a href="uv-offset.html">UV 偏移</a></li>
+                        <li><a href="uv-animation.html">UV 动画</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>🖼️ 纹理操作</h3>
+                    <ul>
+                        <li><a href="texture-sampling.html">纹理采样</a></li>
+                        <li><a href="texture-addressing.html">纹理寻址模式</a></li>
+                        <li><a href="texture-blend.html">纹理混合</a></li>
+                        <li><a href="mipmap.html">Mipmap 详解</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>💡 光照系统</h3>
+                    <ul>
+                        <li><a href="lighting-overview.html">光照概述</a></li>
+                        <li><a href="lambert.html" class="active">Lambert 漫反射</a></li>
+                        <li><a href="phong.html">Phong 高光</a></li>
+                        <li><a href="blinn-phong.html">Blinn-Phong</a></li>
+                        <li><a href="pbr-lighting.html">PBR 光照</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>✨ 特效函数</h3>
+                    <ul>
+                        <li><a href="dissolve.html">溶解效果</a></li>
+                        <li><a href="distortion.html">扭曲效果</a></li>
+                        <li><a href="fresnel.html">菲涅尔效果</a></li>
+                        <li><a href="rim-light.html">边缘光</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>🔧 高级主题</h3>
+                    <ul>
+                        <li><a href="shader-variants.html">Shader Variants</a></li>
+                        <li><a href="compute-shader.html">Compute Shader</a></li>
+                        <li><a href="custom-render-pass.html">自定义 Render Pass</a></li>
+                        <li><a href="performance-optimization.html">性能优化</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1>Lambert 漫反射</h1>
+                <p class="subtitle">经典漫反射光照模型 - 光照计算的起点</p>
+
+                <!-- 理论基础 -->
+                <div class="section">
+                    <h2>📚 理论基础：Lambert 定律</h2>
+                    
+                    <div class="term-card">
+                        <h3>什么是 Lambert 漫反射？</h3>
+                        <div class="term-details">
+                            <p><strong>发现者：</strong>约翰·海因里希·朗伯特（Johann Heinrich Lambert），18 世纪数学家</p>
+                            <p><strong>核心思想：</strong>粗糙表面会将光线均匀地向各个方向反射（漫反射）</p>
+                            <p><strong>物理现象：</strong>表面越朝向光源，接收到的光能越多，就越亮</p>
+                            <p><strong>典型材质：</strong>纸张、石膏、粗糙木材、皮肤（无高光部分）</p>
+                        </div>
+                    </div>
+
+                    <div class="visual-explanation">
+                        <h3>Lambert 定律图解</h3>
+                        <div class="diagram-container">
+                            <svg width="700" height="280" viewBox="0 0 700 280">
+                                <defs>
+                                    <marker id="arrow-red" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                                        <polygon points="0 0, 8 3, 0 6" fill="#e74c3c"/>
+                                    </marker>
+                                    <marker id="arrow-orange" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                                        <polygon points="0 0, 8 3, 0 6" fill="#f39c12"/>
+                                    </marker>
+                                    <linearGradient id="sphereGrad1" cx="30%" cy="30%" r="70%" fx="30%" fy="30%">
+                                        <stop offset="0%" style="stop-color:#fff"/>
+                                        <stop offset="100%" style="stop-color:#e74c3c"/>
+                                    </linearGradient>
+                                    <linearGradient id="sphereGrad2" cx="30%" cy="30%" r="70%" fx="30%" fy="30%">
+                                        <stop offset="0%" style="stop-color:#bbb"/>
+                                        <stop offset="100%" style="stop-color:#666"/>
+                                    </linearGradient>
+                                    <linearGradient id="sphereGrad3" cx="30%" cy="30%" r="70%" fx="30%" fy="30%">
+                                        <stop offset="0%" style="stop-color:#444"/>
+                                        <stop offset="100%" style="stop-color:#111"/>
+                                    </linearGradient>
+                                </defs>
+
+                                <!-- Case 1: 0 degrees -->
+                                <g transform="translate(100, 140)">
+                                    <!-- 表面 -->
+                                    <line x1="-60" y1="60" x2="60" y2="60" stroke="#666" stroke-width="3"/>
+                                    
+                                    <!-- 法线 N -->
+                                    <line x1="0" y1="60" x2="0" y2="0" stroke="#e74c3c" stroke-width="3" marker-end="url(#arrow-red)"/>
+                                    <text x="15" y="25" fill="#e74c3c" font-size="14" font-weight="bold">N</text>
+                                    
+                                    <!-- 光线 L -->
+                                    <line x1="0" y1="-60" x2="0" y2="5" stroke="#f39c12" stroke-width="2" stroke-dasharray="5,3"/>
+                                    <circle cx="0" cy="-70" r="12" fill="#f39c12"/>
+                                    <text x="20" y="-50" fill="#f39c12" font-size="14" font-weight="bold">L</text>
+                                    
+                                    <!-- 角度标注 -->
+                                    <text x="0" y="95" text-anchor="middle" fill="#333" font-size="13" font-weight="bold">θ = 0°</text>
+                                    <text x="0" y="115" text-anchor="middle" fill="#27ae60" font-size="12">dot(N,L) = 1.0</text>
+                                    <text x="0" y="135" text-anchor="middle" fill="#e67e22" font-size="12" font-weight="bold">最亮 ☀️</text>
+                                </g>
+
+                                <!-- Case 2: 60 degrees -->
+                                <g transform="translate(350, 140)">
+                                    <!-- 表面 -->
+                                    <line x1="-60" y1="60" x2="60" y2="60" stroke="#666" stroke-width="3"/>
+                                    
+                                    <!-- 法线 N -->
+                                    <line x1="0" y1="60" x2="0" y2="0" stroke="#e74c3c" stroke-width="3" marker-end="url(#arrow-red)"/>
+                                    <text x="15" y="25" fill="#e74c3c" font-size="14" font-weight="bold">N</text>
+                                    
+                                    <!-- 光线 L (60度) -->
+                                    <line x1="52" y1="-60" x2="5" y2="5" stroke="#f39c12" stroke-width="2" stroke-dasharray="5,3"/>
+                                    <circle cx="58" cy="-68" r="12" fill="#f39c12"/>
+                                    <text x="45" y="-40" fill="#f39c12" font-size="14" font-weight="bold">L</text>
+                                    
+                                    <!-- 角度弧线 -->
+                                    <path d="M 0 30 A 30 30 0 0 1 26 15" fill="none" stroke="#999" stroke-width="1"/>
+                                    <text x="20" y="40" fill="#999" font-size="10">60°</text>
+                                    
+                                    <!-- 角度标注 -->
+                                    <text x="0" y="95" text-anchor="middle" fill="#333" font-size="13" font-weight="bold">θ = 60°</text>
+                                    <text x="0" y="115" text-anchor="middle" fill="#7f8c8d" font-size="12">dot(N,L) = 0.5</text>
+                                    <text x="0" y="135" text-anchor="middle" fill="#95a5a6" font-size="12" font-weight="bold">变暗</text>
+                                </g>
+
+                                <!-- Case 3: 90 degrees -->
+                                <g transform="translate(600, 140)">
+                                    <!-- 表面 -->
+                                    <line x1="-60" y1="60" x2="60" y2="60" stroke="#666" stroke-width="3"/>
+                                    
+                                    <!-- 法线 N -->
+                                    <line x1="0" y1="60" x2="0" y2="0" stroke="#e74c3c" stroke-width="3" marker-end="url(#arrow-red)"/>
+                                    <text x="15" y="25" fill="#e74c3c" font-size="14" font-weight="bold">N</text>
+                                    
+                                    <!-- 光线 L (90度) -->
+                                    <line x1="70" y1="50" x2="10" y2="50" stroke="#f39c12" stroke-width="2" stroke-dasharray="5,3"/>
+                                    <circle cx="80" cy="50" r="12" fill="#f39c12"/>
+                                    <text x="55" y="35" fill="#f39c12" font-size="14" font-weight="bold">L</text>
+                                    
+                                    <!-- 角度弧线 -->
+                                    <path d="M 0 30 A 30 30 0 0 1 30 60" fill="none" stroke="#999" stroke-width="1"/>
+                                    <text x="25" y="50" fill="#999" font-size="10">90°</text>
+                                    
+                                    <!-- 角度标注 -->
+                                    <text x="0" y="95" text-anchor="middle" fill="#333" font-size="13" font-weight="bold">θ = 90°</text>
+                                    <text x="0" y="115" text-anchor="middle" fill="#333" font-size="12">dot(N,L) = 0.0</text>
+                                    <text x="0" y="135" text-anchor="middle" fill="#333" font-size="12" font-weight="bold">全黑 🌑</text>
+                                </g>
+
+                                <!-- 公式说明 -->
+                                <rect x="150" y="5" width="400" height="35" rx="5" fill="#ecf0f1"/>
+                                <text x="350" y="28" text-anchor="middle" fill="#2c3e50" font-size="14" font-weight="bold">
+                                    Lambert = max(0, dot(N, L)) = max(0, cos(θ))
+                                </text>
+                            </svg>
+                        </div>
+                        <p style="text-align: center; color: #666; margin-top: 10px;">
+                            <strong>N</strong> = 表面法线（朝向）| <strong>L</strong> = 指向光源的方向 | <strong>θ</strong> = N 和 L 之间的夹角
+                        </p>
+                    </div>
+
+                    <div class="term-card">
+                        <h3>为什么用点积（Dot Product）？</h3>
+                        <div class="term-details">
+                            <p><strong>数学原理：</strong>两个单位向量的点积 = 它们夹角的余弦值</p>
+                            <p><strong>公式：</strong><code>dot(A, B) = |A| × |B| × cos(θ)</code></p>
+                            <p><strong>当向量归一化后：</strong><code>dot(N, L) = cos(θ)</code></p>
+                            <p><strong>物理直觉：</strong></p>
+                            <ul>
+                                <li>θ = 0°（光线正对表面）→ cos(0°) = 1 → 最亮</li>
+                                <li>θ = 60°（光线倾斜）→ cos(60°) = 0.5 → 较暗</li>
+                                <li>θ = 90°（光线平行表面）→ cos(90°) = 0 → 无光</li>
+                                <li>θ > 90°（背光面）→ cos(θ) < 0 → 用 max(0, ...) 截断为 0</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 核心公式 -->
+                <div class="section">
+                    <h2>📐 核心公式</h2>
+                    
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 25px; border-radius: 12px; color: white; text-align: center; margin: 20px 0;">
+                        <h3 style="margin: 0 0 15px 0; font-size: 1.5em;">Lambert 漫反射公式</h3>
+                        <p style="font-size: 1.4em; font-family: 'Courier New', monospace; margin: 0;">
+                            Diffuse = max(0, dot(N, L)) × LightColor × DiffuseColor
+                        </p>
+                        <p style="margin-top: 15px; font-size: 0.9em; opacity: 0.9;">
+                            N = 表面法线 | L = 光线方向 | dot = 点积
+                        </p>
+                    </div>
+
+                    <pre class="shader-code">// 简化版本（只计算光照强度）
+half NdotL = max(0, dot(normalWS, lightDirWS));
+
+// 完整版本（包含颜色）
+half3 diffuse = NdotL * _LightColor.rgb * _DiffuseColor.rgb;
+
+// URP 中常用 saturate 代替 max(0, ...)
+half NdotL = saturate(dot(normalWS, lightDirWS));</pre>
+                </div>
+
+                <!-- 可视化演示 -->
+                <div class="section">
+                    <h2>🎨 球体光照可视化</h2>
+                    
+                    <div class="visual-explanation">
+                        <div class="diagram-container">
+                            <svg width="600" height="250" viewBox="0 0 600 250">
+                                <defs>
+                                    <!-- 标准 Lambert 球体渐变 -->
+                                    <radialGradient id="lambertSphere" cx="35%" cy="35%" r="65%">
+                                        <stop offset="0%" style="stop-color:#ffffff"/>
+                                        <stop offset="30%" style="stop-color:#f5f5f5"/>
+                                        <stop offset="60%" style="stop-color:#999"/>
+                                        <stop offset="100%" style="stop-color:#000"/>
+                                    </radialGradient>
+                                    
+                                    <!-- Half Lambert 球体渐变 -->
+                                    <radialGradient id="halfLambertSphere" cx="35%" cy="35%" r="65%">
+                                        <stop offset="0%" style="stop-color:#ffffff"/>
+                                        <stop offset="40%" style="stop-color:#ccc"/>
+                                        <stop offset="70%" style="stop-color:#888"/>
+                                        <stop offset="100%" style="stop-color:#444"/>
+                                    </radialGradient>
+                                </defs>
+
+                                <!-- 标准 Lambert -->
+                                <g transform="translate(150, 125)">
+                                    <circle cx="0" cy="0" r="80" fill="url(#lambertSphere)" stroke="#333" stroke-width="1"/>
+                                    
+                                    <!-- 光源指示 -->
+                                    <circle cx="-60" cy="-60" r="15" fill="#f39c12"/>
+                                    <line x1="-50" y1="-50" x2="-20" y2="-20" stroke="#f39c12" stroke-width="2" stroke-dasharray="4"/>
+                                    
+                                    <text x="0" y="110" text-anchor="middle" fill="#333" font-size="14" font-weight="bold">标准 Lambert</text>
+                                    <text x="0" y="130" text-anchor="middle" fill="#666" font-size="11">背光面全黑</text>
+                                </g>
+
+                                <!-- Half Lambert -->
+                                <g transform="translate(450, 125)">
+                                    <circle cx="0" cy="0" r="80" fill="url(#halfLambertSphere)" stroke="#333" stroke-width="1"/>
+                                    
+                                    <!-- 光源指示 -->
+                                    <circle cx="-60" cy="-60" r="15" fill="#f39c12"/>
+                                    <line x1="-50" y1="-50" x2="-20" y2="-20" stroke="#f39c12" stroke-width="2" stroke-dasharray="4"/>
+                                    
+                                    <text x="0" y="110" text-anchor="middle" fill="#333" font-size="14" font-weight="bold">Half Lambert</text>
+                                    <text x="0" y="130" text-anchor="middle" fill="#666" font-size="11">背光面有微弱亮度</text>
+                                </g>
+
+                                <!-- 对比说明 -->
+                                <text x="300" y="25" text-anchor="middle" fill="#2c3e50" font-size="16" font-weight="bold">
+                                    标准 Lambert vs Half Lambert 对比
+                                </text>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Half Lambert -->
+                <div class="section">
+                    <h2>🧙‍♂️ Half Lambert（半兰伯特）</h2>
+                    
+                    <div class="term-card">
+                        <h3>什么是 Half Lambert？</h3>
+                        <div class="term-details">
+                            <p><strong>来源：</strong>Valve 公司在《半条命2》中首创</p>
+                            <p><strong>问题：</strong>标准 Lambert 的背光面是纯黑的，看起来很"死板"</p>
+                            <p><strong>解决：</strong>通过数学技巧，让背光面也有一点亮度，视觉更柔和</p>
+                            <p><strong>适用场景：</strong>卡通渲染、角色皮肤、需要柔和光照的场景</p>
+                        </div>
+                    </div>
+
+                    <div style="background: #e8f8f5; padding: 20px; border-left: 4px solid #16a085; border-radius: 4px; margin: 20px 0;">
+                        <h4 style="margin-top: 0; color: #16a085;">Half Lambert 公式推导</h4>
+                        <p><strong>标准 Lambert：</strong>结果范围 [0, 1]（背光面为 0）</p>
+                        <p><strong>原始点积：</strong>结果范围 [-1, 1]（没有 max 截断时）</p>
+                        <p><strong>Half Lambert 魔法：</strong></p>
+                        <pre class="shader-code">// 标准 Lambert
+half NdotL = max(0, dot(N, L));  // 范围: [0, 1]
+
+// Half Lambert
+half NdotL = dot(N, L) * 0.5 + 0.5;  // 范围: [0, 1]，但分布不同
+
+// 步骤分解：
+// dot(N, L) 范围: [-1, 1]
+// * 0.5 后范围: [-0.5, 0.5]
+// + 0.5 后范围: [0, 1]</pre>
+                        
+                        <table style="width: 100%; margin-top: 15px; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #d5f5e3;">
+                                    <th style="padding: 10px; border: 1px solid #a9dfbf;">dot(N, L)</th>
+                                    <th style="padding: 10px; border: 1px solid #a9dfbf;">标准 Lambert</th>
+                                    <th style="padding: 10px; border: 1px solid #a9dfbf;">Half Lambert</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="padding: 10px; border: 1px solid #a9dfbf; text-align: center;">1.0（正对光源）</td>
+                                    <td style="padding: 10px; border: 1px solid #a9dfbf; text-align: center;">1.0</td>
+                                    <td style="padding: 10px; border: 1px solid #a9dfbf; text-align: center;">1.0</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 10px; border: 1px solid #a9dfbf; text-align: center;">0.0（垂直）</td>
+                                    <td style="padding: 10px; border: 1px solid #a9dfbf; text-align: center;">0.0</td>
+                                    <td style="padding: 10px; border: 1px solid #a9dfbf; text-align: center;">0.5</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 10px; border: 1px solid #a9dfbf; text-align: center;">-1.0（背对光源）</td>
+                                    <td style="padding: 10px; border: 1px solid #a9dfbf; text-align: center;">0.0</td>
+                                    <td style="padding: 10px; border: 1px solid #a9dfbf; text-align: center;">0.0</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 完整代码示例 -->
+                <div class="section">
+                    <h2>💻 完整 HLSL 代码示例</h2>
+                    
+                    <h3>URP Lambert 光照 Shader</h3>
+                    <pre class="shader-code">Shader "Custom/SimpleLambert"
+{
+    Properties
+    {
+        _BaseMap ("Base Map", 2D) = "white" {}
+        _BaseColor ("Base Color", Color) = (1,1,1,1)
+    }
+    
+    SubShader
+    {
+        Tags { "RenderType"="Opaque" "RenderPipeline"="UniversalPipeline" }
+        
+        Pass
+        {
+            Name "ForwardLit"
+            Tags { "LightMode"="UniversalForward" }
+            
+            HLSLPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float3 normalOS   : NORMAL;
+                float2 uv         : TEXCOORD0;
+            };
+            
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float2 uv         : TEXCOORD0;
+                float3 normalWS   : TEXCOORD1;
+            };
+            
+            TEXTURE2D(_BaseMap);
+            SAMPLER(sampler_BaseMap);
+            
+            CBUFFER_START(UnityPerMaterial)
+                float4 _BaseMap_ST;
+                half4 _BaseColor;
+            CBUFFER_END
+            
+            Varyings vert(Attributes input)
+            {
+                Varyings output;
+                
+                // 变换顶点位置到裁剪空间
+                output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
+                
+                // 变换法线到世界空间
+                output.normalWS = TransformObjectToWorldNormal(input.normalOS);
+                
+                // 传递 UV
+                output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+                
+                return output;
+            }
+            
+            half4 frag(Varyings input) : SV_Target
+            {
+                // 采样纹理
+                half4 texColor = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv);
+                
+                // 获取主光源
+                Light mainLight = GetMainLight();
+                
+                // 归一化法线（插值后可能不是单位向量）
+                float3 normalWS = normalize(input.normalWS);
+                
+                // 计算 Lambert 漫反射
+                half NdotL = saturate(dot(normalWS, mainLight.direction));
+                
+                // 最终颜色 = 纹理 × 基础颜色 × 漫反射 × 光源颜色
+                half3 diffuse = texColor.rgb * _BaseColor.rgb * NdotL * mainLight.color;
+                
+                // 添加环境光
+                half3 ambient = SampleSH(normalWS) * texColor.rgb * _BaseColor.rgb;
+                
+                return half4(diffuse + ambient, 1.0);
+            }
+            ENDHLSL
+        }
+    }
+}</pre>
+
+                    <h3>Half Lambert 变体</h3>
+                    <pre class="shader-code">// 在 frag 函数中替换 Lambert 计算部分：
+
+// Half Lambert 漫反射
+half NdotL = dot(normalWS, mainLight.direction) * 0.5 + 0.5;
+
+// 可选：用平方让过渡更自然
+half NdotL_squared = NdotL * NdotL;</pre>
+                </div>
+
+                <!-- 性能考虑 -->
+                <div class="section">
+                    <h2>⚡ 性能考虑</h2>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card" style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);">
+                            <h3>优点</h3>
+                            <ul style="margin: 0; padding-left: 20px;">
+                                <li>计算简单，性能极好</li>
+                                <li>只需一次点积运算</li>
+                                <li>适合移动端</li>
+                                <li>效果对于漫反射材质足够真实</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="feature-card" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
+                            <h3>局限</h3>
+                            <ul style="margin: 0; padding-left: 20px;">
+                                <li>没有高光效果</li>
+                                <li>背光面完全黑暗（需要环境光或 Half Lambert）</li>
+                                <li>不能表现金属、玻璃等材质</li>
+                                <li>不够物理真实（需要 PBR）</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 常见问题 -->
+                <div class="section">
+                    <h2>❓ 常见问题</h2>
+                    
+                    <div class="term-card">
+                        <h3>Q: 为什么要用 saturate 或 max(0, ...) ？</h3>
+                        <div class="term-details">
+                            <p><strong>A:</strong> 当光线从背面照射时（θ > 90°），dot(N, L) 会是负数。负数的光照没有物理意义，所以要截断为 0。</p>
+                            <pre class="shader-code">// saturate 把值限制在 [0, 1] 范围内
+half NdotL = saturate(dot(N, L));
+
+// 等价于
+half NdotL = max(0, min(1, dot(N, L)));
+
+// 对于光照通常只需要 max(0, ...)
+half NdotL = max(0, dot(N, L));</pre>
+                        </div>
+                    </div>
+                    
+                    <div class="term-card">
+                        <h3>Q: N 和 L 必须是单位向量吗？</h3>
+                        <div class="term-details">
+                            <p><strong>A:</strong> 是的！点积公式 <code>dot(A, B) = |A| × |B| × cos(θ)</code>，只有当 |A| = |B| = 1 时，结果才等于 cos(θ)。</p>
+                            <p>所以在片元着色器中通常要 <code>normalize(normalWS)</code>，因为插值后法线可能不再是单位向量。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 导航按钮 -->
+                <div class="buttons">
+                    <a href="lighting-overview.html" class="button">上一页：光照概述</a>
+                    <a href="phong.html" class="button">下一页：Phong 高光</a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

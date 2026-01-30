@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>菲涅尔效果 - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3>✨ 特效系统</h3>
+                    <ul>
+                        <li><a href="dissolve.html">溶解效果</a></li>
+                        <li><a href="fresnel.html" class="active">菲涅尔效果</a></li>
+                        <li><a href="rim-light.html">边缘光</a></li>
+                        <li><a href="distortion.html">扭曲效果</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1>菲涅尔效果 (Fresnel Effect)</h1>
+                <p class="subtitle">物体边缘发光的物理原理</p>
+
+                <div class="section">
+                    <h2>📚 什么是菲涅尔效应</h2>
+                    <p>菲涅尔效应是一种光学现象：当光线以掠射角度射向表面时，反射率会增加。在 Shader 中常用于制作边缘光、能量护盾、水面反射等效果。</p>
+                    
+                    <div class="diagram-container">
+                        <svg viewBox="0 0 400 200" class="fresnel-diagram">
+                            <!-- 球体 -->
+                            <circle cx="200" cy="100" r="80" fill="none" stroke="#4a9eff" stroke-width="2"/>
+                            
+                            <!-- 视线方向 -->
+                            <line x1="350" y1="100" x2="280" y2="100" stroke="#ffff00" stroke-width="2" marker-end="url(#arrow)"/>
+                            <text x="340" y="90" fill="#ffff00" font-size="12">视线</text>
+                            
+                            <!-- 中心法线 -->
+                            <line x1="280" y1="100" x2="320" y2="100" stroke="#00ff88" stroke-width="2"/>
+                            <text x="290" y="85" fill="#00ff88" font-size="10">N·V ≈ 1</text>
+                            <text x="290" y="120" fill="#888" font-size="10">弱反射</text>
+                            
+                            <!-- 边缘法线 -->
+                            <line x1="200" y1="20" x2="200" y2="50" stroke="#00ff88" stroke-width="2"/>
+                            <text x="210" y="30" fill="#00ff88" font-size="10">N·V ≈ 0</text>
+                            <text x="210" y="45" fill="#ff4444" font-size="10">强反射</text>
+                            
+                            <!-- 边缘高亮 -->
+                            <ellipse cx="200" cy="100" rx="80" ry="80" fill="none" stroke="#ff88ff" stroke-width="8" stroke-opacity="0.3"/>
+                            
+                            <defs>
+                                <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                    <polygon points="0 0, 10 3.5, 0 7" fill="#ffff00"/>
+                                </marker>
+                            </defs>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>🧮 数学原理</h2>
+                    
+                    <div class="term-card">
+                        <h3>菲涅尔公式（简化版）</h3>
+                        <div class="term-details">
+                            <p><strong>基础公式：</strong>Fresnel = 1 - (N·V)</p>
+                            <p><strong>幂次调整：</strong>Fresnel = pow(1 - (N·V), power)</p>
+                            <p>其中：</p>
+                            <ul>
+                                <li><strong>N：</strong>表面法线</li>
+                                <li><strong>V：</strong>视线方向</li>
+                                <li><strong>power：</strong>控制边缘范围（通常 1-5）</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="term-card">
+                        <h3>Schlick 近似（物理更准确）</h3>
+                        <div class="term-details">
+                            <p>F = F0 + (1 - F0) × (1 - N·V)⁵</p>
+                            <p><strong>F0：</strong>基础反射率（垂直入射时的反射率）</p>
+                            <ul>
+                                <li>水：约 0.02</li>
+                                <li>玻璃：约 0.04</li>
+                                <li>金属：0.5 - 1.0</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>💻 代码实现</h2>
+                    
+                    <h3>基础菲涅尔</h3>
+                    <pre class="shader-code">// Properties
+_FresnelPower("Fresnel Power", Range(0.1, 5)) = 2
+_FresnelColor("Fresnel Color", Color) = (0, 0.5, 1, 1)
+
+// Fragment Shader
+half4 frag(Varyings input) : SV_Target
+{
+    float3 N = normalize(input.normalWS);
+    float3 V = normalize(_WorldSpaceCameraPos - input.positionWS);
+    
+    // 计算菲涅尔
+    float NdotV = saturate(dot(N, V));
+    float fresnel = pow(1.0 - NdotV, _FresnelPower);
+    
+    // 应用颜色
+    half4 baseColor = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv);
+    half3 finalColor = lerp(baseColor.rgb, _FresnelColor.rgb, fresnel);
+    
+    return half4(finalColor, baseColor.a);
+}</pre>
+
+                    <h3>Schlick 近似</h3>
+                    <pre class="shader-code">float FresnelSchlick(float cosTheta, float F0)
+{
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+// 使用
+float NdotV = saturate(dot(N, V));
+float fresnel = FresnelSchlick(NdotV, 0.04); // 0.04 为非金属默认值</pre>
+
+                    <h3>带颜色的菲涅尔</h3>
+                    <pre class="shader-code">float3 FresnelSchlickColor(float cosTheta, float3 F0)
+{
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+// 金属使用 albedo 作为 F0
+float3 F0 = lerp(0.04, albedo, metallic);
+float3 fresnel = FresnelSchlickColor(NdotV, F0);</pre>
+                </div>
+
+                <div class="section">
+                    <h2>🎮 应用场景</h2>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>🛡️ 能量护盾</h3>
+                            <p>科幻护盾的边缘发光效果</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🌊 水面反射</h3>
+                            <p>水面边缘反射天空</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>👤 角色轮廓</h3>
+                            <p>角色选中或被击中时的高亮</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🚗 车漆效果</h3>
+                            <p>双层漆面的边缘色变</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>💡 常用组合</h2>
+                    
+                    <div class="tip-box">
+                        <h4>菲涅尔 + 自发光</h4>
+                        <pre class="shader-code">// 护盾效果
+float fresnel = pow(1.0 - NdotV, _FresnelPower);
+float3 emission = _FresnelColor.rgb * fresnel * _EmissionStrength;
+return half4(baseColor.rgb + emission, baseColor.a * fresnel);</pre>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

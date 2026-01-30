@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phong 高光 - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3>💡 光照系统</h3>
+                    <ul>
+                        <li><a href="lighting-overview.html">光照概述</a></li>
+                        <li><a href="lambert.html">Lambert 漫反射</a></li>
+                        <li><a href="phong.html" class="active">Phong 高光</a></li>
+                        <li><a href="blinn-phong.html">Blinn-Phong</a></li>
+                        <li><a href="pbr-lighting.html">PBR 光照</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1>Phong 高光反射</h1>
+                <p class="subtitle">经典镜面反射模型</p>
+
+                <div class="section">
+                    <h2>📚 原理</h2>
+                    <p>Phong 光照模型由 Bui Tuong Phong 在 1975 年提出，用于模拟光滑表面的镜面反射。</p>
+                    
+                    <div class="diagram-container">
+                        <svg viewBox="0 0 400 250" class="lighting-diagram">
+                            <!-- 表面 -->
+                            <line x1="50" y1="180" x2="350" y2="180" stroke="#555" stroke-width="3"/>
+                            
+                            <!-- 法线 -->
+                            <line x1="200" y1="180" x2="200" y2="60" stroke="#00ff88" stroke-width="2"/>
+                            <text x="210" y="70" fill="#00ff88" font-size="12">N (法线)</text>
+                            
+                            <!-- 入射光 L -->
+                            <line x1="100" y1="50" x2="200" y2="180" stroke="#ffff00" stroke-width="2"/>
+                            <text x="80" y="50" fill="#ffff00" font-size="12">L (光源)</text>
+                            
+                            <!-- 反射光 R -->
+                            <line x1="200" y1="180" x2="300" y2="50" stroke="#ff8844" stroke-width="2" stroke-dasharray="5,5"/>
+                            <text x="305" y="50" fill="#ff8844" font-size="12">R (反射)</text>
+                            
+                            <!-- 视线 V -->
+                            <line x1="280" y1="80" x2="200" y2="180" stroke="#4a9eff" stroke-width="2"/>
+                            <text x="290" y="90" fill="#4a9eff" font-size="12">V (视线)</text>
+                            
+                            <!-- 公式 -->
+                            <text x="200" y="220" text-anchor="middle" fill="#ccc" font-size="14">Specular = pow(max(R·V, 0), shininess)</text>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>🧮 数学公式</h2>
+                    
+                    <div class="term-card">
+                        <h3>Phong 高光公式</h3>
+                        <div class="term-details">
+                            <p><strong>反射向量：</strong>R = 2(N·L)N - L</p>
+                            <p><strong>高光强度：</strong>I<sub>spec</sub> = K<sub>s</sub> × (R·V)<sup>n</sup></p>
+                            <p>其中：</p>
+                            <ul>
+                                <li><strong>N：</strong>表面法线</li>
+                                <li><strong>L：</strong>光源方向</li>
+                                <li><strong>V：</strong>视线方向</li>
+                                <li><strong>R：</strong>反射方向</li>
+                                <li><strong>n：</strong>光泽度（shininess）</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>💻 代码实现</h2>
+                    
+                    <pre class="shader-code">// Phong 高光计算
+float3 PhongSpecular(float3 normal, float3 lightDir, float3 viewDir, 
+                     float3 specColor, float shininess)
+{
+    // 计算反射向量
+    float3 reflectDir = reflect(-lightDir, normal);
+    
+    // R·V 点积
+    float spec = max(dot(reflectDir, viewDir), 0.0);
+    
+    // 幂次运算控制高光范围
+    spec = pow(spec, shininess);
+    
+    return specColor * spec;
+}
+
+// Fragment Shader
+half4 frag(Varyings input) : SV_Target
+{
+    // 获取方向
+    float3 N = normalize(input.normalWS);
+    float3 L = normalize(_MainLightPosition.xyz);
+    float3 V = normalize(_WorldSpaceCameraPos - input.positionWS);
+    
+    // 漫反射 (Lambert)
+    float NdotL = max(dot(N, L), 0);
+    float3 diffuse = _BaseColor.rgb * NdotL * _MainLightColor.rgb;
+    
+    // 高光 (Phong)
+    float3 specular = PhongSpecular(N, L, V, _SpecularColor.rgb, _Shininess);
+    
+    // 合成
+    float3 color = diffuse + specular;
+    
+    return half4(color, 1);
+}</pre>
+                </div>
+
+                <div class="section">
+                    <h2>🎚️ Shininess 参数</h2>
+                    
+                    <div class="comparison-box">
+                        <div class="compare-item">
+                            <h4>Shininess = 4</h4>
+                            <div class="shine-demo shine-low"></div>
+                            <p>宽泛高光，粗糙表面</p>
+                        </div>
+                        <div class="compare-item">
+                            <h4>Shininess = 32</h4>
+                            <div class="shine-demo shine-medium"></div>
+                            <p>中等高光，塑料感</p>
+                        </div>
+                        <div class="compare-item">
+                            <h4>Shininess = 128</h4>
+                            <div class="shine-demo shine-high"></div>
+                            <p>锐利高光，金属感</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>⚠️ 缺点</h2>
+                    
+                    <div class="warning-box">
+                        <h4>性能问题</h4>
+                        <p><code>reflect()</code> 需要额外计算，比 Blinn-Phong 稍慢。</p>
+                    </div>
+                    
+                    <div class="warning-box">
+                        <h4>物理不正确</h4>
+                        <p>不符合能量守恒，现代游戏更倾向 PBR。</p>
+                    </div>
+                </div>
+
+                <div class="nav-links">
+                    <a href="lambert.html">← Lambert 漫反射</a>
+                    <a href="blinn-phong.html">Blinn-Phong →</a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+
+    <style>
+        .shine-demo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 10px auto;
+        }
+        .shine-low {
+            background: radial-gradient(ellipse 80% 80% at 30% 30%, #fff, #666 30%, #333 70%);
+        }
+        .shine-medium {
+            background: radial-gradient(ellipse 50% 50% at 30% 30%, #fff, #666 40%, #333 70%);
+        }
+        .shine-high {
+            background: radial-gradient(ellipse 20% 20% at 30% 30%, #fff, #666 50%, #333 70%);
+        }
+    </style>
+</body>
+</html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>物体空间 - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3>📐 坐标空间</h3>
+                    <ul>
+                        <li><a href="coordinate-spaces.html">坐标空间概述</a></li>
+                        <li><a href="object-space.html" class="active">物体空间</a></li>
+                        <li><a href="world-space.html">世界空间</a></li>
+                        <li><a href="view-space.html">观察空间</a></li>
+                        <li><a href="clip-space.html">裁剪空间</a></li>
+                        <li><a href="screen-space.html">屏幕空间</a></li>
+                        <li><a href="tangent-space.html">切线空间</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1>物体空间 (Object Space)</h1>
+                <p class="subtitle">也称为模型空间、本地空间 (Model Space / Local Space)</p>
+
+                <div class="section">
+                    <h2>📚 定义</h2>
+                    <p>物体空间是以物体自身为中心的坐标系统。物体的原点通常位于模型的中心或底部，轴向由建模软件决定。</p>
+                    
+                    <div class="diagram-container">
+                        <svg viewBox="0 0 300 250" class="space-diagram">
+                            <!-- 坐标轴 -->
+                            <line x1="150" y1="200" x2="150" y2="50" stroke="#00ff88" stroke-width="2" marker-end="url(#arrowG)"/>
+                            <line x1="150" y1="200" x2="250" y2="200" stroke="#ff4444" stroke-width="2" marker-end="url(#arrowR)"/>
+                            <line x1="150" y1="200" x2="80" y2="250" stroke="#4a9eff" stroke-width="2" marker-end="url(#arrowB)"/>
+                            
+                            <!-- 标签 -->
+                            <text x="155" y="45" fill="#00ff88" font-size="14">Y (上)</text>
+                            <text x="255" y="205" fill="#ff4444" font-size="14">X (右)</text>
+                            <text x="50" y="260" fill="#4a9eff" font-size="14">Z (前)</text>
+                            
+                            <!-- 原点 -->
+                            <circle cx="150" cy="200" r="5" fill="#fff"/>
+                            <text x="160" y="220" fill="#ccc" font-size="12">原点 (0,0,0)</text>
+                            
+                            <!-- 简单物体表示 -->
+                            <rect x="120" y="120" width="60" height="80" fill="none" stroke="#888" stroke-width="1" stroke-dasharray="3"/>
+                            
+                            <defs>
+                                <marker id="arrowG" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                    <polygon points="0 0, 10 3.5, 0 7" fill="#00ff88"/>
+                                </marker>
+                                <marker id="arrowR" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                    <polygon points="0 0, 10 3.5, 0 7" fill="#ff4444"/>
+                                </marker>
+                                <marker id="arrowB" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                    <polygon points="0 0, 10 3.5, 0 7" fill="#4a9eff"/>
+                                </marker>
+                            </defs>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>💻 在 Shader 中使用</h2>
+                    
+                    <pre class="shader-code">// 顶点着色器输入 - 物体空间数据
+struct Attributes
+{
+    float4 positionOS : POSITION;   // 物体空间位置
+    float3 normalOS : NORMAL;       // 物体空间法线
+    float4 tangentOS : TANGENT;     // 物体空间切线
+    float2 uv : TEXCOORD0;
+};
+
+// 常用变换
+Varyings vert(Attributes input)
+{
+    Varyings output;
+    
+    // 物体空间 → 世界空间
+    float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
+    
+    // 物体空间 → 裁剪空间（常用）
+    output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
+    
+    // 物体空间法线 → 世界空间法线
+    output.normalWS = TransformObjectToWorldNormal(input.normalOS);
+    
+    return output;
+}</pre>
+                </div>
+
+                <div class="section">
+                    <h2>🎮 应用场景</h2>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>🔲 顶点动画</h3>
+                            <p>在物体空间对顶点进行变形</p>
+                            <pre class="shader-code">// 物体空间顶点偏移
+input.positionOS.y += sin(_Time.y + input.positionOS.x);</pre>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>📦 程序化效果</h3>
+                            <p>基于本地坐标生成图案</p>
+                            <pre class="shader-code">// 物体空间 UV（三平面映射）
+float2 uvXY = input.positionOS.xy;</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2">⚠️ 注意事项</h2>
+                    
+                    <div class="warning-box">
+                        <h4>非均匀缩放</h4>
+                        <p>如果物体有非均匀缩放，法线变换需要使用逆转置矩阵。URP 的 <code>TransformObjectToWorldNormal</code> 已处理此问题。</p>
+                    </div>
+                </div>
+
+                <div class="nav-links">
+                    <a href="coordinate-spaces.html">← 坐标空间概述</a>
+                    <a href="world-space.html">世界空间 →</a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

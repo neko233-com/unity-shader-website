@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MVP 矩阵 - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3>🧮 数学基础</h3>
+                    <ul>
+                        <li><a href="math-basics.html">数学基础</a></li>
+                        <li><a href="mvp-matrix.html" class="active">MVP 矩阵</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1>MVP 矩阵</h1>
+                <p class="subtitle">Model-View-Projection 变换详解</p>
+
+                <div class="section">
+                    <h2>📚 什么是 MVP</h2>
+                    <p>MVP 是三个变换矩阵的组合，将顶点从物体空间变换到裁剪空间。</p>
+                    
+                    <div class="diagram-container">
+                        <svg viewBox="0 0 600 120" class="mvp-diagram">
+                            <!-- M -->
+                            <rect x="20" y="30" width="100" height="60" fill="#1a1a2e" stroke="#ff4444" rx="5"/>
+                            <text x="70" y="55" text-anchor="middle" fill="#ff4444" font-size="14">M (Model)</text>
+                            <text x="70" y="75" text-anchor="middle" fill="#888" font-size="10">物体→世界</text>
+                            
+                            <text x="140" y="65" fill="#fff" font-size="20">×</text>
+                            
+                            <!-- V -->
+                            <rect x="160" y="30" width="100" height="60" fill="#1a1a2e" stroke="#00ff88" rx="5"/>
+                            <text x="210" y="55" text-anchor="middle" fill="#00ff88" font-size="14">V (View)</text>
+                            <text x="210" y="75" text-anchor="middle" fill="#888" font-size="10">世界→观察</text>
+                            
+                            <text x="280" y="65" fill="#fff" font-size="20">×</text>
+                            
+                            <!-- P -->
+                            <rect x="300" y="30" width="100" height="60" fill="#1a1a2e" stroke="#4a9eff" rx="5"/>
+                            <text x="350" y="55" text-anchor="middle" fill="#4a9eff" font-size="14">P (Projection)</text>
+                            <text x="350" y="75" text-anchor="middle" fill="#888" font-size="10">观察→裁剪</text>
+                            
+                            <text x="420" y="65" fill="#fff" font-size="20">=</text>
+                            
+                            <!-- MVP -->
+                            <rect x="440" y="30" width="140" height="60" fill="#1a1a2e" stroke="#ff88ff" rx="5"/>
+                            <text x="510" y="55" text-anchor="middle" fill="#ff88ff" font-size="14">MVP</text>
+                            <text x="510" y="75" text-anchor="middle" fill="#888" font-size="10">物体→裁剪</text>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2">🔢 各矩阵详解</h2>
+                    
+                    <h3>Model 矩阵 (M)</h3>
+                    <div class="term-card">
+                        <div class="term-details">
+                            <p>将顶点从物体空间变换到世界空间，包含物体的：</p>
+                            <ul>
+                                <li><strong>平移 (Translation)：</strong>位置</li>
+                                <li><strong>旋转 (Rotation)：</strong>朝向</li>
+                                <li><strong>缩放 (Scale)：</strong>大小</li>
+                            </ul>
+                            <p>Unity 变量：<code>unity_ObjectToWorld</code></p>
+                        </div>
+                    </div>
+                    
+                    <h3>View 矩阵 (V)</h3>
+                    <div class="term-card">
+                        <div class="term-details">
+                            <p>将顶点从世界空间变换到相机空间。本质是相机变换的逆矩阵。</p>
+                            <p>Unity 变量：<code>UNITY_MATRIX_V</code></p>
+                        </div>
+                    </div>
+                    
+                    <h3>Projection 矩阵 (P)</h3>
+                    <div class="term-card">
+                        <div class="term-details">
+                            <p>将顶点从观察空间变换到裁剪空间。有两种类型：</p>
+                            <ul>
+                                <li><strong>透视投影：</strong>近大远小（3D 游戏）</li>
+                                <li><strong>正交投影：</strong>保持大小（2D/UI）</li>
+                            </ul>
+                            <p>Unity 变量：<code>UNITY_MATRIX_P</code></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2">💻 在 Shader 中使用</h2>
+                    
+                    <pre class="shader-code">// Unity 内置矩阵
+UNITY_MATRIX_M      // Model 矩阵 (unity_ObjectToWorld)
+UNITY_MATRIX_V      // View 矩阵
+UNITY_MATRIX_P      // Projection 矩阵
+UNITY_MATRIX_VP     // View × Projection
+UNITY_MATRIX_MVP    // Model × View × Projection
+
+// 标准变换
+float4 positionCS = mul(UNITY_MATRIX_MVP, float4(positionOS, 1.0));
+
+// URP 推荐方式（更清晰）
+float4 positionCS = TransformObjectToHClip(positionOS);
+
+// 分步变换
+float3 positionWS = TransformObjectToWorld(positionOS);
+float3 positionVS = TransformWorldToView(positionWS);
+float4 positionCS = TransformWViewToHClip(positionVS);</pre>
+                </div>
+
+                <div class="section">
+                    <h2">🎯 矩阵乘法顺序</h2>
+                    
+                    <div class="warning-box">
+                        <h4">注意乘法顺序</h4>
+                        <p>矩阵乘法从右到左应用变换：</p>
+                        <pre class="shader-code">// positionCS = P × V × M × positionOS
+// 先应用 M，再 V，最后 P
+float4 positionCS = mul(UNITY_MATRIX_P, mul(UNITY_MATRIX_V, mul(UNITY_MATRIX_M, positionOS)));</pre>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2">🔧 常用矩阵变量</h2>
+                    
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>变量</th>
+                                <th>说明</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>unity_ObjectToWorld</code></td>
+                                <td>物体空间 → 世界空间</td>
+                            </tr>
+                            <tr>
+                                <td><code>unity_WorldToObject</code></td>
+                                <td>世界空间 → 物体空间</td>
+                            </tr>
+                            <tr>
+                                <td><code>UNITY_MATRIX_V</code></td>
+                                <td>世界空间 → 观察空间</td>
+                            </tr>
+                            <tr>
+                                <td><code>UNITY_MATRIX_I_V</code></td>
+                                <td>观察空间 → 世界空间</td>
+                            </tr>
+                            <tr>
+                                <td><code>UNITY_MATRIX_VP</code></td>
+                                <td>世界空间 → 裁剪空间</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

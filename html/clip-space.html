@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>裁剪空间 - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3>📐 坐标空间</h3>
+                    <ul>
+                        <li><a href="coordinate-spaces.html">坐标空间概述</a></li>
+                        <li><a href="object-space.html">物体空间</a></li>
+                        <li><a href="world-space.html">世界空间</a></li>
+                        <li><a href="view-space.html">观察空间</a></li>
+                        <li><a href="clip-space.html" class="active">裁剪空间</a></li>
+                        <li><a href="screen-space.html">屏幕空间</a></li>
+                        <li><a href="tangent-space.html">切线空间</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1>裁剪空间 (Clip Space)</h1>
+                <p class="subtitle">也称为齐次裁剪空间 (Homogeneous Clip Space)</p>
+
+                <div class="section">
+                    <h2>📚 定义</h2>
+                    <p>裁剪空间是顶点着色器输出的坐标空间。在这个空间中进行视锥体裁剪，决定哪些顶点可见。</p>
+                    
+                    <div class="term-card">
+                        <h3>关键特点</h3>
+                        <div class="term-details">
+                            <ul>
+                                <li><strong>齐次坐标：</strong>使用 float4，w 分量用于透视除法</li>
+                                <li><strong>裁剪范围：</strong>-w ≤ x, y, z ≤ w</li>
+                                <li><strong>顶点着色器输出：</strong>SV_POSITION 语义</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>🔄 变换流程</h2>
+                    
+                    <div class="diagram-container">
+                        <svg viewBox="0 0 500 100" class="flow-diagram">
+                            <rect x="10" y="30" width="80" height="40" fill="#1a1a2e" stroke="#4a9eff" rx="5"/>
+                            <text x="50" y="55" text-anchor="middle" fill="#4a9eff" font-size="11">观察空间</text>
+                            
+                            <path d="M 100 50 L 140 50" stroke="#888" stroke-width="2" marker-end="url(#flowArrow)"/>
+                            <text x="120" y="40" text-anchor="middle" fill="#888" font-size="9">× P</text>
+                            
+                            <rect x="150" y="30" width="80" height="40" fill="#1a1a2e" stroke="#00ff88" rx="5"/>
+                            <text x="190" y="55" text-anchor="middle" fill="#00ff88" font-size="11">裁剪空间</text>
+                            
+                            <path d="M 240 50 L 280 50" stroke="#888" stroke-width="2" marker-end="url(#flowArrow)"/>
+                            <text x="260" y="40" text-anchor="middle" fill="#888" font-size="9">÷ w</text>
+                            
+                            <rect x="290" y="30" width="80" height="40" fill="#1a1a2e" stroke="#ffff00" rx="5"/>
+                            <text x="330" y="55" text-anchor="middle" fill="#ffff00" font-size="11">NDC</text>
+                            
+                            <path d="M 380 50 L 420 50" stroke="#888" stroke-width="2" marker-end="url(#flowArrow)"/>
+                            
+                            <rect x="430" y="30" width="60" height="40" fill="#1a1a2e" stroke="#ff8844" rx="5"/>
+                            <text x="460" y="55" text-anchor="middle" fill="#ff8844" font-size="11">屏幕</text>
+                            
+                            <defs>
+                                <marker id="flowArrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                    <polygon points="0 0, 10 3.5, 0 7" fill="#888"/>
+                                </marker>
+                            </defs>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>💻 在 Shader 中使用</h2>
+                    
+                    <pre class="shader-code">// 顶点着色器输出裁剪空间位置
+Varyings vert(Attributes input)
+{
+    Varyings output;
+    
+    // 物体空间 → 裁剪空间（最常用）
+    output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
+    
+    // 或分步骤
+    float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
+    output.positionCS = TransformWorldToHClip(positionWS);
+    
+    // 或使用矩阵
+    output.positionCS = mul(UNITY_MATRIX_MVP, input.positionOS);
+    
+    return output;
+}
+
+// 输出结构中必须使用 SV_POSITION 语义
+struct Varyings
+{
+    float4 positionCS : SV_POSITION;  // 裁剪空间位置
+    // ...
+};</pre>
+                </div>
+
+                <div class="section">
+                    <h2">🔢 NDC 差异</h2>
+                    
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>平台</th>
+                                <th>X 范围</th>
+                                <th>Y 范围</th>
+                                <th>Z 范围</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>OpenGL</td>
+                                <td>-1 到 1</td>
+                                <td>-1 到 1</td>
+                                <td>-1 到 1</td>
+                            </tr>
+                            <tr>
+                                <td>DirectX</td>
+                                <td>-1 到 1</td>
+                                <td>-1 到 1</td>
+                                <td>0 到 1</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <div class="tip-box">
+                        <h4>跨平台处理</h4>
+                        <p>URP 会自动处理平台差异，使用 <code>UNITY_REVERSED_Z</code> 等宏来兼容。</p>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2">🎮 应用场景</h2>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>✂️ 裁剪</h3>
+                            <p>GPU 自动裁剪超出视锥体的顶点</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3">📐 透视校正</h3>
+                            <p>透视除法产生近大远小效果</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3">🎯 屏幕位置</h3>
+                            <p>通过 positionCS 计算屏幕坐标</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nav-links">
+                    <a href="view-space.html">← 观察空间</a>
+                    <a href="screen-space.html">屏幕空间 →</a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

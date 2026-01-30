@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>坐标系概述 - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="搜索内容...">
+                    <button id="searchBtn">🔍</button>
+                </div>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3>🚀 入门指南</h3>
+                    <ul>
+                        <li><a href="00-introduction.html">教程介绍</a></li>
+                        <li><a href="01-urp-overview.html">URP 概述</a></li>
+                        <li><a href="02-shader-basics.html">Shader 基础</a></li>
+                        <li><a href="03-terminology.html">术语与黑话</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>🔄 渲染流程</h3>
+                    <ul>
+                        <li><a href="urp-rendering-pipeline.html">URP 渲染管线</a></li>
+                        <li><a href="rendering-stages.html">渲染阶段详解</a></li>
+                        <li><a href="pass-types.html">Pass 类型</a></li>
+                        <li><a href="render-features.html">Render Features</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>📐 坐标空间</h3>
+                    <ul>
+                        <li><a href="coordinate-spaces.html" class="active">坐标系概述</a></li>
+                        <li><a href="object-space.html">模型空间详解</a></li>
+                        <li><a href="world-space.html">世界空间详解</a></li>
+                        <li><a href="view-space.html">观察空间详解</a></li>
+                        <li><a href="clip-space.html">裁剪空间详解</a></li>
+                        <li><a href="screen-space.html">屏幕空间详解</a></li>
+                        <li><a href="tangent-space.html">切线空间详解</a></li>
+                        <li><a href="mvp-matrix.html">MVP 矩阵详解</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>🎨 UV 变换</h3>
+                    <ul>
+                        <li><a href="rotate-uv.html">RotateUV - 旋转矩阵</a></li>
+                        <li><a href="uv-scroll.html">UV 滚动</a></li>
+                        <li><a href="uv-scale.html">UV 缩放</a></li>
+                        <li><a href="uv-offset.html">UV 偏移</a></li>
+                        <li><a href="uv-animation.html">UV 动画</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>🖼️ 纹理操作</h3>
+                    <ul>
+                        <li><a href="texture-sampling.html">纹理采样</a></li>
+                        <li><a href="texture-addressing.html">纹理寻址模式</a></li>
+                        <li><a href="texture-blend.html">纹理混合</a></li>
+                        <li><a href="mipmap.html">Mipmap 详解</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>💡 光照系统</h3>
+                    <ul>
+                        <li><a href="lighting-overview.html">光照概述</a></li>
+                        <li><a href="lambert.html">Lambert 漫反射</a></li>
+                        <li><a href="phong.html">Phong 高光</a></li>
+                        <li><a href="blinn-phong.html">Blinn-Phong</a></li>
+                        <li><a href="pbr-lighting.html">PBR 光照</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>✨ 特效函数</h3>
+                    <ul>
+                        <li><a href="dissolve.html">溶解效果</a></li>
+                        <li><a href="distortion.html">扭曲效果</a></li>
+                        <li><a href="fresnel.html">菲涅尔效果</a></li>
+                        <li><a href="rim-light.html">边缘光</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>🔧 高级主题</h3>
+                    <ul>
+                        <li><a href="shader-variants.html">Shader Variants</a></li>
+                        <li><a href="compute-shader.html">Compute Shader</a></li>
+                        <li><a href="custom-render-pass.html">自定义 Render Pass</a></li>
+                        <li><a href="performance-optimization.html">性能优化</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1>坐标系概述</h1>
+                <p class="subtitle">理解渲染管线中的坐标空间变换 - 顶点从 3D 到 2D 的旅程</p>
+
+                <!-- 为什么需要坐标空间 -->
+                <div class="section">
+                    <h2>🤔 为什么需要多个坐标空间？</h2>
+                    
+                    <div class="term-card">
+                        <h3>问题：如何把 3D 物体显示在 2D 屏幕上？</h3>
+                        <div class="term-details">
+                            <p>想象你在做一个 3D 游戏：</p>
+                            <ul>
+                                <li><strong>模型</strong>是在建模软件里做的，有自己的"原点"（比如角色脚底）</li>
+                                <li>你要把这个角色<strong>放到游戏世界里的某个位置</strong></li>
+                                <li><strong>摄像机</strong>在某个位置、某个角度观察这个世界</li>
+                                <li>最终要<strong>投影</strong>到你的 2D 屏幕上</li>
+                            </ul>
+                            <p><strong>解决方案：</strong>用一系列坐标变换，把顶点一步步从模型自己的坐标系，变到屏幕上的像素位置。</p>
+                        </div>
+                    </div>
+
+                    <div class="visual-explanation">
+                        <h3>坐标空间变换流程图</h3>
+                        <div class="diagram-container">
+                            <svg width="750" height="280" viewBox="0 0 750 280">
+                                <defs>
+                                    <marker id="arrow-flow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                        <polygon points="0 0, 10 3.5, 0 7" fill="#4a90e2"/>
+                                    </marker>
+                                </defs>
+
+                                <!-- 标题 -->
+                                <text x="375" y="25" text-anchor="middle" fill="#2c3e50" font-size="16" font-weight="bold">
+                                    顶点坐标的变换之旅：从 3D 模型到 2D 屏幕
+                                </text>
+
+                                <!-- 1. 模型空间 -->
+                                <g transform="translate(75, 130)">
+                                    <rect x="-55" y="-45" width="110" height="90" rx="8" fill="#3498db"/>
+                                    <text x="0" y="-15" text-anchor="middle" fill="white" font-size="11" font-weight="bold">模型空间</text>
+                                    <text x="0" y="5" text-anchor="middle" fill="white" font-size="10">Object Space</text>
+                                    <text x="0" y="25" text-anchor="middle" fill="#d5e8f7" font-size="9">原点: 模型中心</text>
+                                    
+                                    <!-- 坐标轴示意 -->
+                                    <line x1="-30" y1="40" x2="-10" y2="40" stroke="#e74c3c" stroke-width="2"/>
+                                    <line x1="-30" y1="40" x2="-30" y2="25" stroke="#27ae60" stroke-width="2"/>
+                                    <text x="-20" y="55" fill="white" font-size="8">XYZ</text>
+                                </g>
+
+                                <!-- 箭头 & 矩阵 M -->
+                                <line x1="135" y1="130" x2="185" y2="130" stroke="#4a90e2" stroke-width="2" marker-end="url(#arrow-flow)"/>
+                                <rect x="145" y="105" width="30" height="20" rx="3" fill="#f39c12"/>
+                                <text x="160" y="119" text-anchor="middle" fill="white" font-size="11" font-weight="bold">M</text>
+                                <text x="160" y="145" text-anchor="middle" fill="#666" font-size="9">Model</text>
+
+                                <!-- 2. 世界空间 -->
+                                <g transform="translate(245, 130)">
+                                    <rect x="-55" y="-45" width="110" height="90" rx="8" fill="#27ae60"/>
+                                    <text x="0" y="-15" text-anchor="middle" fill="white" font-size="11" font-weight="bold">世界空间</text>
+                                    <text x="0" y="5" text-anchor="middle" fill="white" font-size="10">World Space</text>
+                                    <text x="0" y="25" text-anchor="middle" fill="#d5f5e3" font-size="9">原点: 场景原点</text>
+                                    
+                                    <!-- 世界示意 -->
+                                    <circle cx="-25" y="40" r="8" fill="none" stroke="white" stroke-width="1.5"/>
+                                    <text x="-5" y="45" fill="white" font-size="8">🌍</text>
+                                </g>
+
+                                <!-- 箭头 & 矩阵 V -->
+                                <line x1="305" y1="130" x2="355" y2="130" stroke="#4a90e2" stroke-width="2" marker-end="url(#arrow-flow)"/>
+                                <rect x="315" y="105" width="30" height="20" rx="3" fill="#f39c12"/>
+                                <text x="330" y="119" text-anchor="middle" fill="white" font-size="11" font-weight="bold">V</text>
+                                <text x="330" y="145" text-anchor="middle" fill="#666" font-size="9">View</text>
+
+                                <!-- 3. 观察空间 -->
+                                <g transform="translate(415, 130)">
+                                    <rect x="-55" y="-45" width="110" height="90" rx="8" fill="#9b59b6"/>
+                                    <text x="0" y="-15" text-anchor="middle" fill="white" font-size="11" font-weight="bold">观察空间</text>
+                                    <text x="0" y="5" text-anchor="middle" fill="white" font-size="10">View Space</text>
+                                    <text x="0" y="25" text-anchor="middle" fill="#e8daef" font-size="9">原点: 摄像机</text>
+                                    
+                                    <!-- 相机示意 -->
+                                    <path d="M -15 35 L 15 45 L -15 55 Z" fill="white" opacity="0.8"/>
+                                </g>
+
+                                <!-- 箭头 & 矩阵 P -->
+                                <line x1="475" y1="130" x2="525" y2="130" stroke="#4a90e2" stroke-width="2" marker-end="url(#arrow-flow)"/>
+                                <rect x="485" y="105" width="30" height="20" rx="3" fill="#f39c12"/>
+                                <text x="500" y="119" text-anchor="middle" fill="white" font-size="11" font-weight="bold">P</text>
+                                <text x="500" y="145" text-anchor="middle" fill="#666" font-size="9">Projection</text>
+
+                                <!-- 4. 裁剪空间 -->
+                                <g transform="translate(585, 130)">
+                                    <rect x="-55" y="-45" width="110" height="90" rx="8" fill="#e74c3c"/>
+                                    <text x="0" y="-15" text-anchor="middle" fill="white" font-size="11" font-weight="bold">裁剪空间</text>
+                                    <text x="0" y="5" text-anchor="middle" fill="white" font-size="10">Clip Space</text>
+                                    <text x="0" y="25" text-anchor="middle" fill="#f5b7b1" font-size="9">齐次坐标</text>
+                                    
+                                    <!-- NDC 示意 -->
+                                    <rect x="-20" y="32" width="40" height="25" fill="none" stroke="white" stroke-width="1.5" stroke-dasharray="3"/>
+                                </g>
+
+                                <!-- 箭头 (GPU 自动) -->
+                                <line x1="645" y1="130" x2="695" y2="130" stroke="#95a5a6" stroke-width="2" marker-end="url(#arrow-flow)"/>
+                                <text x="670" y="145" text-anchor="middle" fill="#666" font-size="9">GPU</text>
+
+                                <!-- 5. 屏幕空间 -->
+                                <g transform="translate(720, 130)">
+                                    <rect x="-30" y="-45" width="60" height="90" rx="8" fill="#34495e"/>
+                                    <text x="0" y="-5" text-anchor="middle" fill="white" font-size="10" font-weight="bold">屏幕</text>
+                                    <text x="0" y="15" text-anchor="middle" fill="#bdc3c7" font-size="8">Screen</text>
+                                    
+                                    <!-- 屏幕示意 -->
+                                    <rect x="-15" y="25" width="30" height="20" fill="#2c3e50" stroke="white" stroke-width="1"/>
+                                </g>
+
+                                <!-- 底部说明 -->
+                                <text x="160" y="230" text-anchor="middle" fill="#3498db" font-size="10">positionOS</text>
+                                <text x="330" y="230" text-anchor="middle" fill="#27ae60" font-size="10">positionWS</text>
+                                <text x="500" y="230" text-anchor="middle" fill="#9b59b6" font-size="10">positionVS</text>
+                                <text x="670" y="230" text-anchor="middle" fill="#e74c3c" font-size="10">positionCS</text>
+
+                                <!-- MVP 整体框 -->
+                                <rect x="135" y="85" width="390" height="55" rx="5" fill="none" stroke="#f39c12" stroke-width="2" stroke-dasharray="5"/>
+                                <text x="330" y="75" text-anchor="middle" fill="#f39c12" font-size="12" font-weight="bold">MVP 矩阵变换</text>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 五大坐标空间详解 -->
+                <div class="section">
+                    <h2>📐 五大坐标空间详解</h2>
+
+                    <!-- 模型空间 -->
+                    <div class="term-card">
+                        <h3>1. 模型空间（Object Space / Local Space）</h3>
+                        <div class="term-details">
+                            <p><strong>定义：</strong>以模型自身为原点的坐标系统</p>
+                            <p><strong>原点：</strong>通常是模型的中心或脚底（取决于建模时的设置）</p>
+                            <p><strong>用途：</strong></p>
+                            <ul>
+                                <li>存储模型原始顶点数据</li>
+                                <li>顶点动画（如角色呼吸、草随风摆动）</li>
+                                <li>模型空间法线（用于法线贴图变换）</li>
+                            </ul>
+                            <p><strong>URP 命名：</strong>后缀 <code>OS</code>（Object Space）</p>
+                            <pre class="shader-code">// 顶点输入
+float4 positionOS : POSITION;   // 模型空间位置
+float3 normalOS   : NORMAL;     // 模型空间法线</pre>
+                        </div>
+                    </div>
+
+                    <!-- 世界空间 -->
+                    <div class="term-card">
+                        <h3>2. 世界空间（World Space）</h3>
+                        <div class="term-details">
+                            <p><strong>定义：</strong>以游戏场景原点为中心的坐标系统</p>
+                            <p><strong>原点：</strong>Unity 场景的 (0, 0, 0) 位置</p>
+                            <p><strong>变换矩阵：</strong>Model 矩阵（M），包含物体的 Position、Rotation、Scale</p>
+                            <p><strong>用途：</strong></p>
+                            <ul>
+                                <li>光照计算（光源位置在世界空间）</li>
+                                <li>阴影计算</li>
+                                <li>全局效果（如全局雾效、反射）</li>
+                            </ul>
+                            <p><strong>URP 命名：</strong>后缀 <code>WS</code>（World Space）</p>
+                            <pre class="shader-code">// 模型空间 → 世界空间
+float3 positionWS = TransformObjectToWorld(positionOS.xyz);
+float3 normalWS   = TransformObjectToWorldNormal(normalOS);</pre>
+                        </div>
+                    </div>
+
+                    <!-- 观察空间 -->
+                    <div class="term-card">
+                        <h3>3. 观察空间（View Space / Camera Space / Eye Space）</h3>
+                        <div class="term-details">
+                            <p><strong>定义：</strong>以摄像机为原点的坐标系统</p>
+                            <p><strong>原点：</strong>摄像机的位置</p>
+                            <p><strong>坐标轴：</strong></p>
+                            <ul>
+                                <li>X 轴：摄像机的右方向</li>
+                                <li>Y 轴：摄像机的上方向</li>
+                                <li>Z 轴：摄像机的前方向（Unity 中是 -Z）</li>
+                            </ul>
+                            <p><strong>变换矩阵：</strong>View 矩阵（V）</p>
+                            <p><strong>用途：</strong></p>
+                            <ul>
+                                <li>深度计算（用于景深效果）</li>
+                                <li>视锥体裁剪准备</li>
+                                <li>某些特殊效果（如屏幕空间反射）</li>
+                            </ul>
+                            <p><strong>URP 命名：</strong>后缀 <code>VS</code>（View Space）</p>
+                            <pre class="shader-code">// 世界空间 → 观察空间
+float3 positionVS = TransformWorldToView(positionWS);</pre>
+                        </div>
+                    </div>
+
+                    <!-- 裁剪空间 -->
+                    <div class="term-card">
+                        <h3>4. 裁剪空间（Clip Space / Homogeneous Clip Space）</h3>
+                        <div class="term-details">
+                            <p><strong>定义：</strong>经过投影变换后的坐标空间</p>
+                            <p><strong>特点：</strong>使用齐次坐标（4D：x, y, z, w）</p>
+                            <p><strong>变换矩阵：</strong>Projection 矩阵（P）</p>
+                            <p><strong>作用：</strong></p>
+                            <ul>
+                                <li>把 3D 场景"压扁"成 2D</li>
+                                <li>实现透视效果（近大远小）</li>
+                                <li>视锥体裁剪（超出范围的顶点被剔除）</li>
+                            </ul>
+                            <p><strong>裁剪规则：</strong>只有满足 -w ≤ x, y, z ≤ w 的顶点才会被保留</p>
+                            <p><strong>URP 命名：</strong>后缀 <code>CS</code>（Clip Space），或 <code>HClip</code>（Homogeneous Clip）</p>
+                            <pre class="shader-code">// 最常用：一步到位从模型空间到裁剪空间
+float4 positionCS = TransformObjectToHClip(positionOS.xyz);
+
+// 或分步骤
+float4 positionCS = TransformWViewToHClip(positionVS);</pre>
+                            <p><strong>重要：</strong>顶点着色器必须输出 <code>SV_POSITION</code> 语义的裁剪空间坐标！</p>
+                        </div>
+                    </div>
+
+                    <!-- 屏幕空间 -->
+                    <div class="term-card">
+                        <h3>5. 屏幕空间（Screen Space / Viewport Space）</h3>
+                        <div class="term-details">
+                            <p><strong>定义：</strong>最终在屏幕上的像素坐标</p>
+                            <p><strong>原点：</strong>通常是屏幕左下角（OpenGL）或左上角（DirectX）</p>
+                            <p><strong>范围：</strong>(0, 0) 到 (屏幕宽度, 屏幕高度)</p>
+                            <p><strong>变换：</strong>GPU 自动完成（透视除法 + 视口变换）</p>
+                            <ul>
+                                <li><strong>透视除法：</strong>x/w, y/w, z/w → NDC（归一化设备坐标，范围 [-1, 1]）</li>
+                                <li><strong>视口变换：</strong>NDC → 屏幕像素坐标</li>
+                            </ul>
+                            <p><strong>用途：</strong></p>
+                            <ul>
+                                <li>后处理效果</li>
+                                <li>屏幕空间效果（SSAO、SSR）</li>
+                                <li>UI 渲染</li>
+                            </ul>
+                            <pre class="shader-code">// 在片元着色器中获取屏幕坐标
+float2 screenUV = input.positionCS.xy / _ScreenParams.xy;
+
+// 或使用 ComputeScreenPos
+float4 screenPos = ComputeScreenPos(positionCS);</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 变换矩阵 -->
+                <div class="section">
+                    <h2>🔄 变换矩阵（MVP）</h2>
+
+                    <div class="visual-explanation">
+                        <h3>MVP 矩阵详解</h3>
+                        <div class="diagram-container">
+                            <svg width="650" height="200" viewBox="0 0 650 200">
+                                <!-- M 矩阵 -->
+                                <g transform="translate(100, 100)">
+                                    <rect x="-70" y="-50" width="140" height="100" rx="8" fill="#3498db"/>
+                                    <text x="0" y="-20" text-anchor="middle" fill="white" font-size="14" font-weight="bold">M (Model)</text>
+                                    <text x="0" y="5" text-anchor="middle" fill="#d5e8f7" font-size="11">模型矩阵</text>
+                                    <text x="0" y="30" text-anchor="middle" fill="white" font-size="10">Position + Rotation</text>
+                                    <text x="0" y="45" text-anchor="middle" fill="white" font-size="10">+ Scale</text>
+                                </g>
+
+                                <text x="185" y="100" text-anchor="middle" fill="#333" font-size="24">×</text>
+
+                                <!-- V 矩阵 -->
+                                <g transform="translate(270, 100)">
+                                    <rect x="-70" y="-50" width="140" height="100" rx="8" fill="#9b59b6"/>
+                                    <text x="0" y="-20" text-anchor="middle" fill="white" font-size="14" font-weight="bold">V (View)</text>
+                                    <text x="0" y="5" text-anchor="middle" fill="#e8daef" font-size="11">视图矩阵</text>
+                                    <text x="0" y="30" text-anchor="middle" fill="white" font-size="10">Camera Position</text>
+                                    <text x="0" y="45" text-anchor="middle" fill="white" font-size="10">+ Rotation</text>
+                                </g>
+
+                                <text x="355" y="100" text-anchor="middle" fill="#333" font-size="24">×</text>
+
+                                <!-- P 矩阵 -->
+                                <g transform="translate(440, 100)">
+                                    <rect x="-70" y="-50" width="140" height="100" rx="8" fill="#e74c3c"/>
+                                    <text x="0" y="-20" text-anchor="middle" fill="white" font-size="14" font-weight="bold">P (Projection)</text>
+                                    <text x="0" y="5" text-anchor="middle" fill="#f5b7b1" font-size="11">投影矩阵</text>
+                                    <text x="0" y="30" text-anchor="middle" fill="white" font-size="10">FOV + Near/Far</text>
+                                    <text x="0" y="45" text-anchor="middle" fill="white" font-size="10">+ Aspect Ratio</text>
+                                </g>
+
+                                <text x="525" y="100" text-anchor="middle" fill="#333" font-size="24">=</text>
+
+                                <!-- MVP -->
+                                <g transform="translate(590, 100)">
+                                    <rect x="-45" y="-30" width="90" height="60" rx="8" fill="#f39c12"/>
+                                    <text x="0" y="8" text-anchor="middle" fill="white" font-size="16" font-weight="bold">MVP</text>
+                                </g>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <pre class="shader-code">// Unity 中的矩阵变量
+unity_ObjectToWorld   // M 矩阵（模型 → 世界）
+unity_WorldToObject   // M 矩阵的逆（世界 → 模型）
+UNITY_MATRIX_V        // V 矩阵（世界 → 观察）
+UNITY_MATRIX_P        // P 矩阵（观察 → 裁剪）
+UNITY_MATRIX_VP       // V × P（世界 → 裁剪）
+UNITY_MATRIX_MVP      // M × V × P（模型 → 裁剪）
+
+// URP 推荐使用封装函数
+float4 positionCS = TransformObjectToHClip(positionOS.xyz);  // 内部使用 UNITY_MATRIX_MVP</pre>
+                </div>
+
+                <!-- URP 变换函数 -->
+                <div class="section">
+                    <h2>🛠️ URP 常用变换函数</h2>
+
+                    <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                        <thead>
+                            <tr style="background: #f8f9fa;">
+                                <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">函数</th>
+                                <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">变换</th>
+                                <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">输入 → 输出</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid #ddd;"><code>TransformObjectToWorld</code></td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">位置：模型 → 世界</td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">float3 → float3</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid #ddd;"><code>TransformWorldToObject</code></td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">位置：世界 → 模型</td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">float3 → float3</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid #ddd;"><code>TransformWorldToView</code></td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">位置：世界 → 观察</td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">float3 → float3</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid #ddd;"><code>TransformObjectToHClip</code></td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">位置：模型 → 裁剪</td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">float3 → float4</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid #ddd;"><code>TransformWorldToHClip</code></td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">位置：世界 → 裁剪</td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">float3 → float4</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid #ddd;"><code>TransformObjectToWorldNormal</code></td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">法线：模型 → 世界</td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">float3 → float3</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid #ddd;"><code>TransformObjectToWorldDir</code></td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">方向：模型 → 世界</td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">float3 → float3</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <pre class="shader-code">// 典型的顶点着色器
+Varyings vert(Attributes input)
+{
+    Varyings output;
+    
+    // 位置变换（模型 → 裁剪）
+    output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
+    
+    // 法线变换（模型 → 世界），用于光照
+    output.normalWS = TransformObjectToWorldNormal(input.normalOS);
+    
+    // 如果需要世界空间位置（用于某些效果）
+    output.positionWS = TransformObjectToWorld(input.positionOS.xyz);
+    
+    return output;
+}</pre>
+                </div>
+
+                <!-- 各空间的典型用途 -->
+                <div class="section">
+                    <h2>🎯 各空间的典型用途</h2>
+
+                    <div class="feature-grid">
+                        <div class="feature-card" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);">
+                            <h3>模型空间</h3>
+                            <ul style="margin: 0; padding-left: 20px;">
+                                <li>顶点动画</li>
+                                <li>模型变形效果</li>
+                                <li>局部遮罩</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="feature-card" style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);">
+                            <h3>世界空间</h3>
+                            <ul style="margin: 0; padding-left: 20px;">
+                                <li>光照计算</li>
+                                <li>全局效果</li>
+                                <li>世界坐标贴图</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="feature-card" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">
+                            <h3>观察空间</h3>
+                            <ul style="margin: 0; padding-left: 20px;">
+                                <li>深度效果</li>
+                                <li>景深（DOF）</li>
+                                <li>雾效</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="feature-card" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
+                            <h3>屏幕空间</h3>
+                            <ul style="margin: 0; padding-left: 20px;">
+                                <li>后处理</li>
+                                <li>UI 渲染</li>
+                                <li>屏幕特效</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 导航按钮 -->
+                <div class="buttons">
+                    <a href="03-terminology.html" class="button">上一页：术语与黑话</a>
+                    <a href="object-space.html" class="button">下一页：模型空间详解</a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>渲染阶段 - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3">🔄 渲染管线</h3>
+                    <ul>
+                        <li><a href="urp-rendering-pipeline.html">URP 渲染流程</a></li>
+                        <li><a href="rendering-stages.html" class="active">渲染阶段</a></li>
+                        <li><a href="pass-types.html">Pass 类型</a></li>
+                        <li><a href="render-features.html">Render Features</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1>渲染阶段 (Rendering Stages)</h1>
+                <p class="subtitle">理解 GPU 图形管线的各个阶段</p>
+
+                <div class="section">
+                    <h2">📊 图形管线概览</h2>
+                    
+                    <div class="diagram-container">
+                        <svg viewBox="0 0 600 400" class="pipeline-diagram">
+                            <!-- 应用阶段 -->
+                            <rect x="50" y="20" width="500" height="50" fill="#1a1a2e" stroke="#ff8844" rx="5"/>
+                            <text x="300" y="50" text-anchor="middle" fill="#ff8844" font-size="14">应用阶段 (CPU)</text>
+                            
+                            <line x1="300" y1="70" x2="300" y2="90" stroke="#555" stroke-width="2" marker-end="url(#pipeArrow)"/>
+                            
+                            <!-- 几何阶段 -->
+                            <rect x="50" y="100" width="500" height="120" fill="#1a1a2e" stroke="#4a9eff" rx="5"/>
+                            <text x="300" y="125" text-anchor="middle" fill="#4a9eff" font-size="14">几何阶段 (GPU - 可编程)</text>
+                            
+                            <rect x="70" y="140" width="120" height="60" fill="#2a2a40" stroke="#4a9eff" rx="3"/>
+                            <text x="130" y="175" text-anchor="middle" fill="#ccc" font-size="11">顶点着色器</text>
+                            
+                            <rect x="240" y="140" width="120" height="60" fill="#2a2a40" stroke="#888" rx="3" stroke-dasharray="3"/>
+                            <text x="300" y="170" text-anchor="middle" fill="#888" font-size="10">曲面细分</text>
+                            <text x="300" y="185" text-anchor="middle" fill="#666" font-size="9">(可选)</text>
+                            
+                            <rect x="410" y="140" width="120" height="60" fill="#2a2a40" stroke="#888" rx="3" stroke-dasharray="3"/>
+                            <text x="470" y="170" text-anchor="middle" fill="#888" font-size="10">几何着色器</text>
+                            <text x="470" y="185" text-anchor="middle" fill="#666" font-size="9">(可选)</text>
+                            
+                            <line x1="300" y1="220" x2="300" y2="240" stroke="#555" stroke-width="2" marker-end="url(#pipeArrow)"/>
+                            
+                            <!-- 光栅化阶段 -->
+                            <rect x="50" y="250" width="500" height="50" fill="#1a1a2e" stroke="#00ff88" rx="5"/>
+                            <text x="300" y="280" text-anchor="middle" fill="#00ff88" font-size="14">光栅化阶段 (GPU - 固定)</text>
+                            
+                            <line x1="300" y1="300" x2="300" y2="320" stroke="#555" stroke-width="2" marker-end="url(#pipeArrow)"/>
+                            
+                            <!-- 片段阶段 -->
+                            <rect x="50" y="330" width="500" height="50" fill="#1a1a2e" stroke="#ff44ff" rx="5"/>
+                            <text x="300" y="360" text-anchor="middle" fill="#ff44ff" font-size="14">片段阶段 (GPU - 可编程)</text>
+                            
+                            <defs>
+                                <marker id="pipeArrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                    <polygon points="0 0, 10 3.5, 0 7" fill="#555"/>
+                                </marker>
+                            </defs>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2">🔧 各阶段详解</h2>
+                    
+                    <h3>1. 应用阶段 (Application Stage)</h3>
+                    <div class="term-card">
+                        <div class="term-details">
+                            <p><strong>执行位置：</strong>CPU</p>
+                            <p><strong>主要工作：</strong></p>
+                            <ul>
+                                <li>碰撞检测、输入响应、动画</li>
+                                <li>准备渲染数据（Draw Call）</li>
+                                <li>决定哪些物体需要渲染（剔除）</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <h3>2. 顶点着色器 (Vertex Shader)</h3>
+                    <div class="term-card">
+                        <div class="term-details">
+                            <p><strong>执行次数：</strong>每个顶点执行一次</p>
+                            <p><strong>主要工作：</strong></p>
+                            <ul>
+                                <li>坐标变换（MVP）</li>
+                                <li>顶点动画</li>
+                                <li>传递数据到片段着色器</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <h3>3. 光栅化 (Rasterization)</h3>
+                    <div class="term-card">
+                        <div class="term-details">
+                            <p><strong>执行位置：</strong>GPU 固定功能</p>
+                            <p><strong>主要工作：</strong></p>
+                            <ul>
+                                <li>将三角形转换为片段（像素）</li>
+                                <li>插值顶点属性（UV、颜色等）</li>
+                                <li>裁剪、背面剔除</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <h3>4. 片段着色器 (Fragment Shader)</h3>
+                    <div class="term-card">
+                        <div class="term-details">
+                            <p><strong>执行次数：</strong>每个片段执行一次</p>
+                            <p><strong>主要工作：</strong></p>
+                            <ul>
+                                <li>纹理采样</li>
+                                <li>光照计算</li>
+                                <li>输出最终颜色</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2">💻 Shader 代码对应</h2>
+                    
+                    <pre class="shader-code">// 顶点着色器 - 每个顶点执行一次
+Varyings vert(Attributes input)
+{
+    Varyings output;
+    // 坐标变换
+    output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
+    // 传递 UV
+    output.uv = input.uv;
+    return output;
+}
+
+// ↓ 光栅化（自动执行）：三角形 → 片段，插值 UV
+
+// 片段着色器 - 每个片段执行一次
+half4 frag(Varyings input) : SV_Target
+{
+    // 采样纹理
+    half4 color = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv);
+    // 返回颜色
+    return color;
+}</pre>
+                </div>
+
+                <div class="section">
+                    <h2">⚡ 性能考量</h2>
+                    
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>阶段</th>
+                                <th>执行次数</th>
+                                <th>优化建议</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>顶点着色器</td>
+                                <td>顶点数</td>
+                                <td>减少顶点数、简化计算</td>
+                            </tr>
+                            <tr>
+                                <td>片段着色器</td>
+                                <td>像素数（可能很大）</td>
+                                <td>减少纹理采样、避免分支</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

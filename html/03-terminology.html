@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>术语与黑话 - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="搜索内容...">
+                    <button id="searchBtn">🔍</button>
+                </div>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3>🚀 入门指南</h3>
+                    <ul>
+                        <li><a href="00-introduction.html">教程介绍</a></li>
+                        <li><a href="01-urp-overview.html">URP 概述</a></li>
+                        <li><a href="02-shader-basics.html">Shader 基础</a></li>
+                        <li><a href="03-terminology.html" class="active">术语与黑话</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>🔄 渲染流程</h3>
+                    <ul>
+                        <li><a href="urp-rendering-pipeline.html">URP 渲染管线</a></li>
+                        <li><a href="rendering-stages.html">渲染阶段详解</a></li>
+                        <li><a href="pass-types.html">Pass 类型</a></li>
+                        <li><a href="render-features.html">Render Features</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>📐 坐标空间</h3>
+                    <ul>
+                        <li><a href="coordinate-spaces.html">坐标系概述</a></li>
+                        <li><a href="object-space.html">模型空间详解</a></li>
+                        <li><a href="world-space.html">世界空间详解</a></li>
+                        <li><a href="view-space.html">观察空间详解</a></li>
+                        <li><a href="clip-space.html">裁剪空间详解</a></li>
+                        <li><a href="screen-space.html">屏幕空间详解</a></li>
+                        <li><a href="tangent-space.html">切线空间详解</a></li>
+                        <li><a href="mvp-matrix.html">MVP 矩阵详解</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>🎨 UV 变换</h3>
+                    <ul>
+                        <li><a href="rotate-uv.html">RotateUV - 旋转矩阵</a></li>
+                        <li><a href="uv-scroll.html">UV 滚动</a></li>
+                        <li><a href="uv-scale.html">UV 缩放</a></li>
+                        <li><a href="uv-offset.html">UV 偏移</a></li>
+                        <li><a href="uv-animation.html">UV 动画</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>🖼️ 纹理操作</h3>
+                    <ul>
+                        <li><a href="texture-sampling.html">纹理采样</a></li>
+                        <li><a href="texture-addressing.html">纹理寻址模式</a></li>
+                        <li><a href="texture-blend.html">纹理混合</a></li>
+                        <li><a href="mipmap.html">Mipmap 详解</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>💡 光照系统</h3>
+                    <ul>
+                        <li><a href="lighting-overview.html">光照概述</a></li>
+                        <li><a href="lambert.html">Lambert 漫反射</a></li>
+                        <li><a href="phong.html">Phong 高光</a></li>
+                        <li><a href="blinn-phong.html">Blinn-Phong</a></li>
+                        <li><a href="pbr-lighting.html">PBR 光照</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>✨ 特效函数</h3>
+                    <ul>
+                        <li><a href="dissolve.html">溶解效果</a></li>
+                        <li><a href="distortion.html">扭曲效果</a></li>
+                        <li><a href="fresnel.html">菲涅尔效果</a></li>
+                        <li><a href="rim-light.html">边缘光</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>🔧 高级主题</h3>
+                    <ul>
+                        <li><a href="shader-variants.html">Shader Variants</a></li>
+                        <li><a href="compute-shader.html">Compute Shader</a></li>
+                        <li><a href="custom-render-pass.html">自定义 Render Pass</a></li>
+                        <li><a href="performance-optimization.html">性能优化</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1>术语与黑话</h1>
+                <p class="subtitle">Unity Shader 中的行话解读 - 让你读代码不再懵逼</p>
+
+                <!-- 为什么需要这个页面 -->
+                <div class="section">
+                    <h2>📚 为什么需要这个页面？</h2>
+                    <p>Unity Shader 代码里有大量的术语、缩写和"黑话"，初学者看到这些会一脸茫然：</p>
+                    <ul>
+                        <li><code>SV_POSITION</code> 是什么？为什么要加 <code>SV_</code>？</li>
+                        <li><code>Attributes</code> 和 <code>Varyings</code> 是干嘛的？</li>
+                        <li><code>CBUFFER</code> 又是什么鬼？</li>
+                    </ul>
+                    <p>本页面用<strong>通俗易懂</strong>的方式解释这些"暗号"，让你从此读 Shader 代码不再犯晕。</p>
+                </div>
+
+                <!-- 数据结构术语 -->
+                <div class="section">
+                    <h2>🏗️ 数据结构术语</h2>
+
+                    <div class="term-card">
+                        <h3>Attributes（属性）</h3>
+                        <div class="term-details">
+                            <p><strong>完整名称：</strong>Vertex Attributes（顶点属性）</p>
+                            <p><strong>是什么：</strong>从 CPU 传给顶点着色器的<strong>输入数据</strong></p>
+                            <p><strong>包含信息：</strong>顶点位置、法线、UV 坐标、顶点颜色等</p>
+                            <p><strong>类比：</strong>就像快递包裹上的"寄件信息"，告诉你这个顶点从哪来、带了什么数据</p>
+                            <pre class="shader-code">struct Attributes
+{
+    float4 positionOS : POSITION;   // 模型空间位置
+    float3 normalOS   : NORMAL;     // 模型空间法线
+    float2 uv         : TEXCOORD0;  // 纹理坐标
+};</pre>
+                        </div>
+                    </div>
+
+                    <div class="term-card">
+                        <h3>Varyings（变量 / 插值数据）</h3>
+                        <div class="term-details">
+                            <p><strong>完整名称：</strong>Varying Variables（变化的变量）</p>
+                            <p><strong>是什么：</strong>从顶点着色器传给片元着色器的<strong>中间数据</strong></p>
+                            <p><strong>特点：</strong>会在三角形内部自动<strong>插值</strong>（平滑过渡）</p>
+                            <p><strong>类比：</strong>就像"流水线上的半成品"，顶点处理完了传给片元继续加工</p>
+                            <pre class="shader-code">struct Varyings
+{
+    float4 positionCS : SV_POSITION;  // 裁剪空间位置（必须有）
+    float2 uv         : TEXCOORD0;    // 传递 UV 给片元着色器
+    float3 normalWS   : TEXCOORD1;    // 传递世界空间法线
+};</pre>
+                            <p><strong>为什么叫 Varying：</strong>因为这些值在三角形表面会"变化"（插值）</p>
+                        </div>
+                    </div>
+
+                    <div class="visual-explanation">
+                        <h3>Attributes vs Varyings 数据流</h3>
+                        <div class="diagram-container">
+                            <svg width="650" height="200" viewBox="0 0 650 200">
+                                <defs>
+                                    <marker id="arrow-blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                        <polygon points="0 0, 10 3.5, 0 7" fill="#3498db"/>
+                                    </marker>
+                                </defs>
+                                
+                                <!-- CPU/Mesh -->
+                                <rect x="20" y="60" width="100" height="80" rx="8" fill="#ecf0f1" stroke="#bdc3c7" stroke-width="2"/>
+                                <text x="70" y="95" text-anchor="middle" fill="#2c3e50" font-size="12" font-weight="bold">CPU</text>
+                                <text x="70" y="115" text-anchor="middle" fill="#7f8c8d" font-size="10">Mesh 数据</text>
+                                
+                                <!-- Arrow -->
+                                <line x1="120" y1="100" x2="160" y2="100" stroke="#3498db" stroke-width="2" marker-end="url(#arrow-blue)"/>
+                                <text x="140" y="85" text-anchor="middle" fill="#3498db" font-size="10">Attributes</text>
+                                
+                                <!-- Vertex Shader -->
+                                <rect x="170" y="60" width="120" height="80" rx="8" fill="#3498db"/>
+                                <text x="230" y="95" text-anchor="middle" fill="white" font-size="12" font-weight="bold">Vertex Shader</text>
+                                <text x="230" y="115" text-anchor="middle" fill="white" font-size="10">顶点着色器</text>
+                                
+                                <!-- Arrow -->
+                                <line x1="290" y1="100" x2="330" y2="100" stroke="#9b59b6" stroke-width="2" marker-end="url(#arrow-blue)"/>
+                                <text x="310" y="85" text-anchor="middle" fill="#9b59b6" font-size="10">Varyings</text>
+                                
+                                <!-- Rasterizer -->
+                                <rect x="340" y="60" width="100" height="80" rx="8" fill="#f39c12"/>
+                                <text x="390" y="95" text-anchor="middle" fill="white" font-size="12" font-weight="bold">光栅化</text>
+                                <text x="390" y="115" text-anchor="middle" fill="white" font-size="10">插值</text>
+                                
+                                <!-- Arrow -->
+                                <line x1="440" y1="100" x2="480" y2="100" stroke="#9b59b6" stroke-width="2" marker-end="url(#arrow-blue)"/>
+                                <text x="460" y="85" text-anchor="middle" fill="#9b59b6" font-size="10">Varyings</text>
+                                
+                                <!-- Fragment Shader -->
+                                <rect x="490" y="60" width="130" height="80" rx="8" fill="#9b59b6"/>
+                                <text x="555" y="95" text-anchor="middle" fill="white" font-size="12" font-weight="bold">Fragment Shader</text>
+                                <text x="555" y="115" text-anchor="middle" fill="white" font-size="10">片元着色器</text>
+                                
+                                <!-- 说明 -->
+                                <text x="325" y="175" text-anchor="middle" fill="#666" font-size="11">Attributes 是输入，Varyings 是中间传递的数据（会被自动插值）</text>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 语义(Semantics) -->
+                <div class="section">
+                    <h2>🏷️ 语义（Semantics）</h2>
+                    <p>语义就是变量后面的 <code>: XXXX</code> 部分，告诉 GPU 这个变量<strong>是干什么用的</strong>。</p>
+
+                    <div class="term-card">
+                        <h3>POSITION</h3>
+                        <div class="term-details">
+                            <p><strong>含义：</strong>顶点在模型空间的位置</p>
+                            <p><strong>数据来源：</strong>来自 Mesh 的顶点数据</p>
+                            <p><strong>使用位置：</strong>顶点着色器的输入（Attributes 结构体中）</p>
+                            <pre class="shader-code">float4 positionOS : POSITION;  // OS = Object Space</pre>
+                        </div>
+                    </div>
+
+                    <div class="term-card">
+                        <h3>SV_POSITION</h3>
+                        <div class="term-details">
+                            <p><strong>完整名称：</strong>System Value - Position</p>
+                            <p><strong>SV_ 是什么意思：</strong>System Value（系统值），表示这是 GPU 特殊处理的数据</p>
+                            <p><strong>含义：</strong>裁剪空间位置（经过 MVP 变换后的位置）</p>
+                            <p><strong>为什么特殊：</strong>GPU 需要这个值来判断顶点在不在屏幕上、进行深度测试等</p>
+                            <p><strong>重要：</strong>顶点着色器<strong>必须</strong>输出 SV_POSITION！</p>
+                            <pre class="shader-code">// 顶点着色器输出（Varyings 中）
+float4 positionCS : SV_POSITION;  // CS = Clip Space
+
+// 顶点着色器中必须赋值
+output.positionCS = TransformObjectToHClip(input.positionOS.xyz);</pre>
+                        </div>
+                    </div>
+
+                    <div class="term-card">
+                        <h3>SV_Target</h3>
+                        <div class="term-details">
+                            <p><strong>完整名称：</strong>System Value - Target</p>
+                            <p><strong>含义：</strong>片元着色器的输出颜色目标</p>
+                            <p><strong>作用：</strong>告诉 GPU 这个颜色要写到渲染目标（屏幕/纹理）上</p>
+                            <p><strong>可以有多个：</strong>SV_Target0, SV_Target1... 用于 MRT（多渲染目标）</p>
+                            <pre class="shader-code">half4 frag(Varyings input) : SV_Target
+{
+    return half4(1, 0, 0, 1);  // 输出红色
+}</pre>
+                        </div>
+                    </div>
+
+                    <div class="term-card">
+                        <h3>TEXCOORD0, TEXCOORD1...</h3>
+                        <div class="term-details">
+                            <p><strong>含义：</strong>纹理坐标（通用插值寄存器）</p>
+                            <p><strong>不只是 UV：</strong>虽然叫 TEXCOORD，但可以存任何要插值的数据</p>
+                            <p><strong>数量限制：</strong>一般有 TEXCOORD0 ~ TEXCOORD7（8 个）</p>
+                            <pre class="shader-code">struct Varyings
+{
+    float4 positionCS : SV_POSITION;
+    float2 uv         : TEXCOORD0;  // 用于传 UV
+    float3 normalWS   : TEXCOORD1;  // 用于传法线
+    float3 viewDirWS  : TEXCOORD2;  // 用于传视线方向
+    // ...可以继续用 TEXCOORD3, 4, 5...
+};</pre>
+                        </div>
+                    </div>
+
+                    <h3>常用语义速查表</h3>
+                    <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                        <thead>
+                            <tr style="background: #f8f9fa;">
+                                <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">语义</th>
+                                <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">含义</th>
+                                <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">使用位置</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid #ddd;"><code>POSITION</code></td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">模型空间顶点位置</td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">顶点输入</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid #ddd;"><code>NORMAL</code></td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">模型空间法线</td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">顶点输入</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid #ddd;"><code>TANGENT</code></td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">模型空间切线</td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">顶点输入</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid #ddd;"><code>COLOR</code></td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">顶点颜色</td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">顶点输入</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid #ddd;"><code>SV_POSITION</code></td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">裁剪空间位置</td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">顶点输出（必须）</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid #ddd;"><code>SV_Target</code></td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">输出颜色</td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">片元输出</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid #ddd;"><code>TEXCOORD0~7</code></td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">通用插值数据</td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">顶点输出/片元输入</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- CBUFFER -->
+                <div class="section">
+                    <h2>📦 CBUFFER（常量缓冲区）</h2>
+
+                    <div class="term-card">
+                        <h3>CBUFFER_START / CBUFFER_END</h3>
+                        <div class="term-details">
+                            <p><strong>完整名称：</strong>Constant Buffer（常量缓冲区）</p>
+                            <p><strong>是什么：</strong>一块传递给 GPU 的数据区域，存放材质参数</p>
+                            <p><strong>为什么要用：</strong>为了支持 <strong>SRP Batcher</strong>，大幅提升渲染性能</p>
+                            <p><strong>规则：</strong>所有在 Properties 中声明的变量，都要放在 CBUFFER 里</p>
+                            <pre class="shader-code">// Properties 中声明
+Properties
+{
+    _BaseMap ("Base Map", 2D) = "white" {}
+    _BaseColor ("Base Color", Color) = (1,1,1,1)
+    _Smoothness ("Smoothness", Range(0,1)) = 0.5
+}
+
+// HLSL 中对应的 CBUFFER
+CBUFFER_START(UnityPerMaterial)
+    float4 _BaseMap_ST;   // 纹理的 Tiling 和 Offset
+    half4  _BaseColor;    // 颜色
+    half   _Smoothness;   // 平滑度
+CBUFFER_END</pre>
+                            <p><strong>注意：</strong>纹理本身（TEXTURE2D）不放在 CBUFFER 里，只有数值类型才放</p>
+                        </div>
+                    </div>
+
+                    <div class="visual-explanation">
+                        <h3>SRP Batcher 工作原理</h3>
+                        <div class="diagram-container">
+                            <svg width="600" height="180" viewBox="0 0 600 180">
+                                <defs>
+                                    <marker id="arr" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                        <polygon points="0 0, 10 3.5, 0 7" fill="#27ae60"/>
+                                    </marker>
+                                </defs>
+                                
+                                <!-- 不使用 CBUFFER -->
+                                <text x="150" y="25" text-anchor="middle" fill="#e74c3c" font-size="14" font-weight="bold">❌ 不使用 CBUFFER</text>
+                                <rect x="30" y="40" width="60" height="40" rx="4" fill="#e74c3c"/>
+                                <text x="60" y="65" text-anchor="middle" fill="white" font-size="10">物体1</text>
+                                <rect x="100" y="40" width="60" height="40" rx="4" fill="#e74c3c"/>
+                                <text x="130" y="65" text-anchor="middle" fill="white" font-size="10">物体2</text>
+                                <rect x="170" y="40" width="60" height="40" rx="4" fill="#e74c3c"/>
+                                <text x="200" y="65" text-anchor="middle" fill="white" font-size="10">物体3</text>
+                                <text x="150" y="105" text-anchor="middle" fill="#e74c3c" font-size="11">每个物体都要上传整个 Shader 数据</text>
+                                <text x="150" y="125" text-anchor="middle" fill="#e74c3c" font-size="11">Draw Call: 3 次</text>
+                                
+                                <!-- 使用 CBUFFER -->
+                                <text x="450" y="25" text-anchor="middle" fill="#27ae60" font-size="14" font-weight="bold">✅ 使用 CBUFFER (SRP Batcher)</text>
+                                <rect x="330" y="40" width="240" height="40" rx="4" fill="#27ae60"/>
+                                <text x="360" y="65" text-anchor="middle" fill="white" font-size="10">物体1</text>
+                                <text x="450" y="65" text-anchor="middle" fill="white" font-size="10">物体2</text>
+                                <text x="540" y="65" text-anchor="middle" fill="white" font-size="10">物体3</text>
+                                <text x="450" y="105" text-anchor="middle" fill="#27ae60" font-size="11">Shader 数据复用，只更新材质参数</text>
+                                <text x="450" y="125" text-anchor="middle" fill="#27ae60" font-size="11">Draw Call: 合批优化</text>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 变量命名约定 -->
+                <div class="section">
+                    <h2>🔤 URP 变量命名约定</h2>
+                    
+                    <div class="term-card">
+                        <h3>坐标空间后缀</h3>
+                        <div class="term-details">
+                            <p>URP 使用后缀来标识变量所在的坐标空间：</p>
+                            <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
+                                <tr>
+                                    <td style="padding: 8px; border: 1px solid #ddd;"><code>OS</code></td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">Object Space（模型空间）</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; border: 1px solid #ddd;"><code>WS</code></td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">World Space（世界空间）</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; border: 1px solid #ddd;"><code>VS</code></td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">View Space（观察空间）</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; border: 1px solid #ddd;"><code>CS</code></td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">Clip Space（裁剪空间）</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; border: 1px solid #ddd;"><code>TS</code></td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">Tangent Space（切线空间）</td>
+                                </tr>
+                            </table>
+                            <pre class="shader-code">float3 positionOS;  // 模型空间位置
+float3 positionWS;  // 世界空间位置
+float3 normalWS;    // 世界空间法线
+float4 positionCS;  // 裁剪空间位置</pre>
+                        </div>
+                    </div>
+
+                    <div class="term-card">
+                        <h3>下划线前缀 _</h3>
+                        <div class="term-details">
+                            <p><strong>规则：</strong>在 Properties 中声明的变量，名称以下划线 <code>_</code> 开头</p>
+                            <p><strong>原因：</strong>Unity 的历史约定，区分属性和局部变量</p>
+                            <pre class="shader-code">// Properties 声明
+_BaseColor ("Base Color", Color) = (1,1,1,1)
+_BaseMap ("Base Map", 2D) = "white" {}
+_Metallic ("Metallic", Range(0,1)) = 0
+
+// 在 HLSL 中使用
+half4 color = _BaseColor;
+half4 texColor = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, uv);</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 常用宏 -->
+                <div class="section">
+                    <h2>🧩 常用宏定义</h2>
+
+                    <div class="term-card">
+                        <h3>TEXTURE2D / SAMPLER</h3>
+                        <div class="term-details">
+                            <p><strong>作用：</strong>声明纹理和采样器（分离式声明）</p>
+                            <p><strong>为什么分开：</strong>多个纹理可以共享一个采样器，节省硬件资源</p>
+                            <pre class="shader-code">TEXTURE2D(_BaseMap);           // 声明纹理
+SAMPLER(sampler_BaseMap);      // 声明采样器（名字约定：sampler_ + 纹理名）
+
+// 采样时
+half4 color = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, uv);</pre>
+                        </div>
+                    </div>
+
+                    <div class="term-card">
+                        <h3>TRANSFORM_TEX</h3>
+                        <div class="term-details">
+                            <p><strong>作用：</strong>应用纹理的 Tiling 和 Offset</p>
+                            <p><strong>展开：</strong><code>uv * _MainTex_ST.xy + _MainTex_ST.zw</code></p>
+                            <pre class="shader-code">// _BaseMap_ST 存储了 Tiling (xy) 和 Offset (zw)
+float2 uv = TRANSFORM_TEX(input.uv, _BaseMap);
+
+// 等价于
+float2 uv = input.uv * _BaseMap_ST.xy + _BaseMap_ST.zw;</pre>
+                        </div>
+                    </div>
+
+                    <div class="term-card">
+                        <h3>TransformObjectToHClip</h3>
+                        <div class="term-details">
+                            <p><strong>完整名称：</strong>Transform Object Space To Homogeneous Clip Space</p>
+                            <p><strong>作用：</strong>将模型空间坐标直接变换到裁剪空间（一步完成 MVP 变换）</p>
+                            <pre class="shader-code">// 最常用的变换
+output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
+
+// 等价于
+output.positionCS = mul(UNITY_MATRIX_MVP, input.positionOS);</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 数据类型 -->
+                <div class="section">
+                    <h2>📊 数据类型</h2>
+
+                    <div class="term-card">
+                        <h3>float vs half vs fixed</h3>
+                        <div class="term-details">
+                            <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
+                                <thead>
+                                    <tr style="background: #f8f9fa;">
+                                        <th style="padding: 10px; border: 1px solid #ddd;">类型</th>
+                                        <th style="padding: 10px; border: 1px solid #ddd;">精度</th>
+                                        <th style="padding: 10px; border: 1px solid #ddd;">范围</th>
+                                        <th style="padding: 10px; border: 1px solid #ddd;">用途</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="padding: 10px; border: 1px solid #ddd;"><code>float</code></td>
+                                        <td style="padding: 10px; border: 1px solid #ddd;">32 位</td>
+                                        <td style="padding: 10px; border: 1px solid #ddd;">很大</td>
+                                        <td style="padding: 10px; border: 1px solid #ddd;">位置、UV、精确计算</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 10px; border: 1px solid #ddd;"><code>half</code></td>
+                                        <td style="padding: 10px; border: 1px solid #ddd;">16 位</td>
+                                        <td style="padding: 10px; border: 1px solid #ddd;">-60000 ~ 60000</td>
+                                        <td style="padding: 10px; border: 1px solid #ddd;">颜色、方向、一般计算</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 10px; border: 1px solid #ddd;"><code>fixed</code></td>
+                                        <td style="padding: 10px; border: 1px solid #ddd;">11 位（已废弃）</td>
+                                        <td style="padding: 10px; border: 1px solid #ddd;">-2 ~ 2</td>
+                                        <td style="padding: 10px; border: 1px solid #ddd;">URP 不再使用</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <p><strong>建议：</strong>位置用 <code>float</code>，颜色用 <code>half</code></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 导航按钮 -->
+                <div class="buttons">
+                    <a href="02-shader-basics.html" class="button">上一页：Shader 基础</a>
+                    <a href="coordinate-spaces.html" class="button">下一页：坐标系概述</a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shader 变体 - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3>⚙️ 高级主题</h3>
+                    <ul>
+                        <li><a href="shader-variants.html" class="active">Shader 变体</a></li>
+                        <li><a href="compute-shader.html">Compute Shader</a></li>
+                        <li><a href="custom-render-pass.html">自定义渲染 Pass</a></li>
+                        <li><a href="performance-optimization.html">性能优化</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1>Shader 变体 (Shader Variants)</h1>
+                <p class="subtitle">理解和管理 Shader 关键字</p>
+
+                <div class="section">
+                    <h2>📚 什么是 Shader 变体</h2>
+                    <p>Shader 变体是同一个 Shader 的不同编译版本，每个变体对应不同的功能组合。使用 <code>#pragma</code> 指令定义关键字来生成变体。</p>
+                    
+                    <div class="warning-box">
+                        <h4>⚠️ 变体爆炸</h4>
+                        <p>变体数量 = 2^n（n 为关键字数量）。10 个关键字就会生成 1024 个变体！</p>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>💻 关键字类型</h2>
+                    
+                    <h3>multi_compile vs shader_feature</h3>
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>指令</th>
+                                <th>编译行为</th>
+                                <th>适用场景</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>multi_compile</code></td>
+                                <td>编译所有变体</td>
+                                <td>全局设置（雾效、灯光）</td>
+                            </tr>
+                            <tr>
+                                <td><code>shader_feature</code></td>
+                                <td>只编译使用的变体</td>
+                                <td>材质特定功能</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>代码示例</h3>
+                    <pre class="shader-code">// 多选一的关键字组
+#pragma multi_compile _ _MAIN_LIGHT_SHADOWS
+#pragma multi_compile _ _ADDITIONAL_LIGHTS
+
+// 材质功能开关
+#pragma shader_feature _USE_NORMAL_MAP
+#pragma shader_feature _USE_EMISSION
+
+// 本地关键字（Unity 2019.3+）
+#pragma multi_compile_local _ _LOCAL_OPTION
+
+// 在代码中使用
+#if defined(_USE_NORMAL_MAP)
+    // 法线贴图相关代码
+    half3 normalTS = UnpackNormal(SAMPLE_TEXTURE2D(_NormalMap, sampler_NormalMap, uv));
+#else
+    half3 normalTS = half3(0, 0, 1);
+#endif</pre>
+                </div>
+
+                <div class="section">
+                    <h2>🔧 URP 常见关键字</h2>
+                    
+                    <pre class="shader-code">// 光照相关
+#pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE
+#pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
+#pragma multi_compile _ _ADDITIONAL_LIGHT_SHADOWS
+#pragma multi_compile _ _SHADOWS_SOFT
+
+// 渲染相关
+#pragma multi_compile _ _MIXED_LIGHTING_SUBTRACTIVE
+#pragma multi_compile _ LIGHTMAP_ON
+#pragma multi_compile_fog
+
+// GPU Instancing
+#pragma multi_compile_instancing</pre>
+                </div>
+
+                <div class="section">
+                    <h2>📦 变体管理</h2>
+                    
+                    <h3>查看变体数量</h3>
+                    <div class="tip-box">
+                        <p>在 Shader 的 Inspector 面板中点击 "Compile and show code" 下拉菜单，可以看到变体数量和编译时间。</p>
+                    </div>
+                    
+                    <h3>剥离不需要的变体</h3>
+                    <pre class="shader-code">// 使用 IPreprocessShaders 接口
+using UnityEditor.Build;
+using UnityEditor.Rendering;
+
+class ShaderStripper : IPreprocessShaders
+{
+    public int callbackOrder => 0;
+    
+    public void OnProcessShader(Shader shader, ShaderSnippetData snippet, 
+                                 IList<ShaderCompilerData> inputData)
+    {
+        for (int i = inputData.Count - 1; i >= 0; i--)
+        {
+            // 移除不需要的变体
+            if (inputData[i].shaderKeywordSet.IsEnabled(
+                new ShaderKeyword("_DEBUG_MODE")))
+            {
+                inputData.RemoveAt(i);
+            }
+        }
+    }
+}</pre>
+                </div>
+
+                <div class="section">
+                    <h2>💡 最佳实践</h2>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>1. 使用 shader_feature</h3>
+                            <p>材质功能优先使用 shader_feature</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>2. 本地关键字</h3>
+                            <p>使用 _local 减少全局关键字占用</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>3. 合并关键字</h3>
+                            <p>相关功能用一个关键字控制多个效果</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>4. 定期检查</h3>
+                            <p>监控变体数量，避免爆炸式增长</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

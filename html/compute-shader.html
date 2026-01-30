@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compute Shader - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3">⚙️ 高级主题</h3>
+                    <ul>
+                        <li><a href="shader-variants.html">Shader 变体</a></li>
+                        <li><a href="compute-shader.html" class="active">Compute Shader</a></li>
+                        <li><a href="custom-render-pass.html">自定义渲染 Pass</a></li>
+                        <li><a href="performance-optimization.html">性能优化</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1">Compute Shader</h1>
+                <p class="subtitle">GPU 通用计算</p>
+
+                <div class="section">
+                    <h2">📚 什么是 Compute Shader</h2>
+                    <p>Compute Shader 是运行在 GPU 上的通用计算程序，不绑定到渲染管线，可以进行任意并行计算。</p>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3">⚡ 并行计算</h3>
+                            <p>数千个线程同时执行</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3">🔓 灵活访问</h3>
+                            <p>可读写任意 Buffer/Texture</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3">📊 数据处理</h3>
+                            <p>粒子、物理、AI 等</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2">💻 基础结构</h2>
+                    
+                    <h3">Compute Shader 文件 (.compute)</h3>
+                    <pre class="shader-code">// MyComputeShader.compute
+#pragma kernel CSMain
+
+// 输入/输出缓冲
+RWTexture2D<float4> Result;
+float _Time;
+
+// 线程组大小 [numthreads(x, y, z)]
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    // id.xy 是当前线程处理的像素坐标
+    float2 uv = id.xy / 512.0;
+    
+    // 计算颜色
+    float r = sin(uv.x * 10 + _Time) * 0.5 + 0.5;
+    float g = cos(uv.y * 10 + _Time) * 0.5 + 0.5;
+    
+    // 写入结果
+    Result[id.xy] = float4(r, g, 0.5, 1);
+}</pre>
+
+                    <h3">C# 调用代码</h3>
+                    <pre class="shader-code">using UnityEngine;
+
+public class ComputeShaderExample : MonoBehaviour
+{
+    public ComputeShader computeShader;
+    public RenderTexture resultTexture;
+    
+    void Start()
+    {
+        // 创建 RenderTexture
+        resultTexture = new RenderTexture(512, 512, 0);
+        resultTexture.enableRandomWrite = true;  // 重要！
+        resultTexture.Create();
+    }
+    
+    void Update()
+    {
+        // 找到 kernel
+        int kernel = computeShader.FindKernel("CSMain");
+        
+        // 设置参数
+        computeShader.SetTexture(kernel, "Result", resultTexture);
+        computeShader.SetFloat("_Time", Time.time);
+        
+        // 派发计算
+        // 512 / 8 = 64 个线程组
+        computeShader.Dispatch(kernel, 512 / 8, 512 / 8, 1);
+    }
+}</pre>
+                </div>
+
+                <div class="section">
+                    <h2">🔢 线程模型</h2>
+                    
+                    <div class="term-card">
+                        <h3">线程组 (Thread Group)</h3>
+                        <div class="term-details">
+                            <p><code>[numthreads(8, 8, 1)]</code> 定义每个线程组的大小</p>
+                            <p><code>Dispatch(64, 64, 1)</code> 定义线程组数量</p>
+                            <p><strong>总线程数：</strong>8×8×1 × 64×64×1 = 262,144</p>
+                        </div>
+                    </div>
+                    
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>语义</th>
+                                <th>说明</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>SV_GroupID</code></td>
+                                <td>线程组 ID</td>
+                            </tr>
+                            <tr>
+                                <td><code>SV_GroupThreadID</code></td>
+                                <td>组内线程 ID</td>
+                            </tr>
+                            <tr>
+                                <td><code>SV_DispatchThreadID</code></td>
+                                <td>全局线程 ID（最常用）</td>
+                            </tr>
+                            <tr>
+                                <td><code>SV_GroupIndex</code></td>
+                                <td>组内线程一维索引</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="section">
+                    <h2">🎮 常见应用</h2>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3">🌊 GPU 粒子</h3>
+                            <p>大量粒子的位置更新</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3">🖼️ 图像处理</h3>
+                            <p>模糊、边缘检测等</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3">🌿 草地/毛发</h3>
+                            <p>程序化生成和动画</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3">🧠 AI/模拟</h3>
+                            <p>神经网络、物理模拟</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2">⚠️ 注意事项</h2>
+                    
+                    <div class="warning-box">
+                        <h4">平台支持</h4>
+                        <p>部分旧设备不支持 Compute Shader。使用前检查 <code>SystemInfo.supportsComputeShaders</code></p>
+                    </div>
+                    
+                    <div class="warning-box">
+                        <h4">线程同步</h4>
+                        <p>组内线程可用 <code>GroupMemoryBarrierWithGroupSync()</code> 同步，跨组需要多次 Dispatch。</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

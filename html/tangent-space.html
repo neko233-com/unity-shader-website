@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>切线空间 - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3>📐 坐标空间</h3>
+                    <ul>
+                        <li><a href="coordinate-spaces.html">坐标空间概述</a></li>
+                        <li><a href="object-space.html">物体空间</a></li>
+                        <li><a href="world-space.html">世界空间</a></li>
+                        <li><a href="view-space.html">观察空间</a></li>
+                        <li><a href="clip-space.html">裁剪空间</a></li>
+                        <li><a href="screen-space.html">屏幕空间</a></li>
+                        <li><a href="tangent-space.html" class="active">切线空间</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1>切线空间 (Tangent Space)</h1>
+                <p class="subtitle">法线贴图使用的局部坐标系统</p>
+
+                <div class="section">
+                    <h2>📚 定义</h2>
+                    <p>切线空间是定义在每个顶点上的局部坐标系，由切线(T)、副切线(B)、法线(N)三个轴构成，也称为 TBN 空间。</p>
+                    
+                    <div class="diagram-container">
+                        <svg viewBox="0 0 300 250" class="tbn-diagram">
+                            <!-- 表面 -->
+                            <ellipse cx="150" cy="180" rx="100" ry="30" fill="none" stroke="#555" stroke-width="2"/>
+                            
+                            <!-- TBN 轴 -->
+                            <line x1="150" y1="180" x2="150" y2="60" stroke="#00ff88" stroke-width="3" marker-end="url(#tbnN)"/>
+                            <line x1="150" y1="180" x2="250" y2="160" stroke="#ff4444" stroke-width="3" marker-end="url(#tbnT)"/>
+                            <line x1="150" y1="180" x2="80" y2="130" stroke="#4a9eff" stroke-width="3" marker-end="url(#tbnB)"/>
+                            
+                            <!-- 标签 -->
+                            <text x="160" y="55" fill="#00ff88" font-size="14">N (法线)</text>
+                            <text x="255" y="165" fill="#ff4444" font-size="14">T (切线)</text>
+                            <text x="30" y="125" fill="#4a9eff" font-size="14">B (副切线)</text>
+                            
+                            <!-- UV 方向示意 -->
+                            <text x="200" y="200" fill="#888" font-size="10">→ U</text>
+                            <text x="70" y="175" fill="#888" font-size="10">→ V</text>
+                            
+                            <defs>
+                                <marker id="tbnN" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                    <polygon points="0 0, 10 3.5, 0 7" fill="#00ff88"/>
+                                </marker>
+                                <marker id="tbnT" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                    <polygon points="0 0, 10 3.5, 0 7" fill="#ff4444"/>
+                                </marker>
+                                <marker id="tbnB" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                    <polygon points="0 0, 10 3.5, 0 7" fill="#4a9eff"/>
+                                </marker>
+                            </defs>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2">🎯 为什么需要切线空间</h2>
+                    
+                    <div class="term-card">
+                        <h3>法线贴图存储</h3>
+                        <div class="term-details">
+                            <p>法线贴图中的法线是相对于表面存储的，而不是世界空间。这样同一张法线贴图可以应用到任何朝向的表面。</p>
+                            <ul>
+                                <li><strong>蓝色通道：</strong>Z 分量，朝向表面外（通常接近1）</li>
+                                <li><strong>红色通道：</strong>X 分量，沿切线方向</li>
+                                <li><strong>绿色通道：</strong>Y 分量，沿副切线方向</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>💻 在 Shader 中使用</h2>
+                    
+                    <pre class="shader-code">// 顶点着色器 - 构建 TBN 矩阵
+Varyings vert(Attributes input)
+{
+    Varyings output;
+    
+    // 变换到世界空间
+    output.normalWS = TransformObjectToWorldNormal(input.normalOS);
+    output.tangentWS = TransformObjectToWorldDir(input.tangentOS.xyz);
+    
+    // 计算副切线（使用切线的 w 分量决定方向）
+    float sign = input.tangentOS.w * GetOddNegativeScale();
+    output.bitangentWS = cross(output.normalWS, output.tangentWS) * sign;
+    
+    return output;
+}
+
+// 片段着色器 - 采样法线贴图
+half4 frag(Varyings input) : SV_Target
+{
+    // 采样法线贴图（切线空间）
+    half4 normalMap = SAMPLE_TEXTURE2D(_BumpMap, sampler_BumpMap, input.uv);
+    half3 normalTS = UnpackNormal(normalMap);
+    
+    // 构建 TBN 矩阵
+    half3x3 TBN = half3x3(
+        input.tangentWS,
+        input.bitangentWS,
+        input.normalWS
+    );
+    
+    // 切线空间 → 世界空间
+    half3 normalWS = TransformTangentToWorld(normalTS, TBN);
+    normalWS = normalize(normalWS);
+    
+    // 使用世界空间法线进行光照计算...
+}</pre>
+                </div>
+
+                <div class="section">
+                    <h2">🔧 URP 辅助函数</h2>
+                    
+                    <pre class="shader-code">// URP 提供的便捷函数
+#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+// 解包法线
+half3 normalTS = UnpackNormal(normalMapSample);
+
+// 带强度调节
+half3 normalTS = UnpackNormalScale(normalMapSample, _BumpScale);
+
+// 变换到世界空间
+half3 normalWS = TransformTangentToWorld(normalTS, 
+    half3x3(tangentWS, bitangentWS, vertexNormalWS));</pre>
+                </div>
+
+                <div class="section">
+                    <h2">🎮 应用场景</h2>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3">🗺️ 法线贴图</h3>
+                            <p>增加表面细节而不增加几何复杂度</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3">🌊 水面波纹</h3>
+                            <p>动态法线产生波纹效果</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3">📦 视差贴图</h3>
+                            <p>模拟深度的高度图效果</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nav-links">
+                    <a href="screen-space.html">← 屏幕空间</a>
+                    <a href="mvp-matrix.html">MVP 矩阵 →</a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

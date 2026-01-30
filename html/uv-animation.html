@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title">UV 动画 - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1">URP 教程</h1>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3">🎨 UV 变换</h3>
+                    <ul>
+                        <li><a href="rotate-uv.html">RotateUV - 旋转矩阵</a></li>
+                        <li><a href="uv-scroll.html">UV 滚动</a></li>
+                        <li><a href="uv-scale.html">UV 缩放</a></li>
+                        <li><a href="uv-offset.html">UV 偏移</a></li>
+                        <li><a href="uv-animation.html" class="active">UV 动画</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1">UV 动画</h1>
+                <p class="subtitle">组合 UV 变换创建动态效果</p>
+
+                <div class="section">
+                    <h2">📚 _Time 变量</h2>
+                    
+                    <div class="term-card">
+                        <h3">Unity 内置时间变量</h3>
+                        <div class="term-details">
+                            <table class="comparison-table">
+                                <thead>
+                                    <tr>
+                                        <th>分量</th>
+                                        <th>值</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><code>_Time.x</code></td>
+                                        <td>t / 20</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>_Time.y</code></td>
+                                        <td>t（常用）</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>_Time.z</code></td>
+                                        <td>t × 2</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>_Time.w</code></td>
+                                        <td>t × 3</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2">💻 常见动画效果</h2>
+                    
+                    <h3">1. 线性滚动</h3>
+                    <pre class="shader-code">float2 scrollUV = uv + _Speed * _Time.y;</pre>
+
+                    <h3">2. 正弦波动</h3>
+                    <pre class="shader-code">// 水波效果
+float wave = sin(uv.x * _Frequency + _Time.y * _Speed) * _Amplitude;
+float2 waveUV = uv + float2(0, wave);</pre>
+
+                    <h3">3. 旋转动画</h3>
+                    <pre class="shader-code">float angle = _Time.y * _RotateSpeed;
+float2 center = float2(0.5, 0.5);
+float2 centered = uv - center;
+
+float s = sin(angle);
+float c = cos(angle);
+float2 rotated;
+rotated.x = centered.x * c - centered.y * s;
+rotated.y = centered.x * s + centered.y * c;
+
+float2 finalUV = rotated + center;</pre>
+
+                    <h3">4. 呼吸缩放</h3>
+                    <pre class="shader-code">float scale = 1.0 + sin(_Time.y * _Speed) * _Amount;
+float2 center = float2(0.5, 0.5);
+float2 scaledUV = (uv - center) * scale + center;</pre>
+
+                    <h3">5. 扭曲动画</h3>
+                    <pre class="shader-code">// 使用噪声纹理产生扭曲
+float2 noise = SAMPLE_TEXTURE2D(_NoiseMap, sampler_NoiseMap, uv + _Time.y * 0.1).xy;
+float2 distortedUV = uv + (noise - 0.5) * _DistortStrength;</pre>
+                </div>
+
+                <div class="section">
+                    <h2">🎮 综合示例：能量盾</h2>
+                    
+                    <pre class="shader-code">half4 frag(Varyings input) : SV_Target
+{
+    // 基础 UV
+    float2 uv = input.uv;
+    
+    // 1. 滚动的扰动纹理
+    float2 scrollUV = uv + float2(0, _Time.y * 0.2);
+    float distort = SAMPLE_TEXTURE2D(_DistortMap, sampler_DistortMap, scrollUV).r;
+    
+    // 2. 应用扭曲
+    float2 distortedUV = uv + (distort - 0.5) * 0.1;
+    
+    // 3. 采样主纹理
+    half4 mainColor = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, distortedUV);
+    
+    // 4. 菲涅尔边缘
+    float fresnel = pow(1.0 - saturate(dot(input.normalWS, input.viewDirWS)), 3);
+    
+    // 5. 脉冲发光
+    float pulse = sin(_Time.y * 3) * 0.5 + 0.5;
+    
+    // 合成
+    half3 finalColor = mainColor.rgb + _EdgeColor.rgb * fresnel * (0.5 + pulse * 0.5);
+    
+    return half4(finalColor, mainColor.a * fresnel);
+}</pre>
+                </div>
+
+                <div class="section">
+                    <h2">💡 技巧</h2>
+                    
+                    <div class="tip-box">
+                        <h4">避免大数值问题</h4>
+                        <p><code>_Time</code> 会持续增长，长时间运行可能导致精度问题。对于循环动画，使用 <code>frac()</code>：</p>
+                        <pre class="shader-code">float t = frac(_Time.y * _Speed);  // 保持在 [0, 1] 范围</pre>
+                    </div>
+                </div>
+
+                <div class="nav-links">
+                    <a href="uv-offset.html">← UV 偏移</a>
+                    <a href="texture-sampling.html">纹理采样 →</a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>纹理混合 - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1">URP 教程</h1>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3">🖼️ 纹理</h3>
+                    <ul>
+                        <li><a href="texture-sampling.html">纹理采样</a></li>
+                        <li><a href="mipmap.html">Mipmap</a></li>
+                        <li><a href="texture-addressing.html">纹理寻址</a></li>
+                        <li><a href="texture-blend.html" class="active">纹理混合</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1">纹理混合</h1>
+                <p class="subtitle">多层纹理叠加技术</p>
+
+                <div class="section">
+                    <h2">📚 基础混合</h2>
+                    
+                    <h3">lerp 线性插值</h3>
+                    <pre class="shader-code">// lerp(a, b, t) = a + (b - a) * t
+half4 color1 = SAMPLE_TEXTURE2D(_Tex1, sampler_Tex1, uv);
+half4 color2 = SAMPLE_TEXTURE2D(_Tex2, sampler_Tex2, uv);
+
+// t = 0 时返回 color1，t = 1 时返回 color2
+half4 blended = lerp(color1, color2, _BlendFactor);</pre>
+                </div>
+
+                <div class="section">
+                    <h2">🗺️ 基于遮罩混合</h2>
+                    
+                    <pre class="shader-code">// 使用遮罩纹理控制混合
+half mask = SAMPLE_TEXTURE2D(_MaskTex, sampler_MaskTex, uv).r;
+half4 blended = lerp(color1, color2, mask);</pre>
+                    
+                    <svg width="500" height="120" viewBox="0 0 500 120">
+                        <rect x="10" y="20" width="80" height="80" fill="#4a90d9" rx="5"/>
+                        <text x="50" y="115" text-anchor="middle" font-size="11">纹理 A</text>
+                        
+                        <text x="120" y="65" text-anchor="middle" font-size="20">+</text>
+                        
+                        <rect x="150" y="20" width="80" height="80" fill="#d94a4a" rx="5"/>
+                        <text x="190" y="115" text-anchor="middle" font-size="11">纹理 B</text>
+                        
+                        <text x="260" y="65" text-anchor="middle" font-size="20">×</text>
+                        
+                        <defs>
+                            <linearGradient id="maskGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#000"/>
+                                <stop offset="100%" style="stop-color:#fff"/>
+                            </linearGradient>
+                        </defs>
+                        <rect x="290" y="20" width="80" height="80" fill="url(#maskGrad)" rx="5"/>
+                        <text x="330" y="115" text-anchor="middle" font-size="11">遮罩</text>
+                        
+                        <text x="400" y="65" text-anchor="middle" font-size="20">=</text>
+                        
+                        <defs>
+                            <linearGradient id="resultGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#4a90d9"/>
+                                <stop offset="100%" style="stop-color:#d94a4a"/>
+                            </linearGradient>
+                        </defs>
+                        <rect x="420" y="20" width="80" height="80" fill="url(#resultGrad)" rx="5"/>
+                        <text x="460" y="115" text-anchor="middle" font-size="11">结果</text>
+                    </svg>
+                </div>
+
+                <div class="section">
+                    <h2">🏔️ 地形多层混合</h2>
+                    
+                    <pre class="shader-code">// 4 层地形纹理（草、泥土、岩石、雪）
+half4 grass = SAMPLE_TEXTURE2D(_GrassTex, sampler_GrassTex, uv * _GrassTiling);
+half4 dirt = SAMPLE_TEXTURE2D(_DirtTex, sampler_DirtTex, uv * _DirtTiling);
+half4 rock = SAMPLE_TEXTURE2D(_RockTex, sampler_RockTex, uv * _RockTiling);
+half4 snow = SAMPLE_TEXTURE2D(_SnowTex, sampler_SnowTex, uv * _SnowTiling);
+
+// Splat Map (RGBA = 4 层权重)
+half4 splat = SAMPLE_TEXTURE2D(_SplatMap, sampler_SplatMap, uv);
+
+// 加权混合
+half4 blended = grass * splat.r + dirt * splat.g + rock * splat.b + snow * splat.a;</pre>
+                </div>
+
+                <div class="section">
+                    <h2">📐 基于高度混合</h2>
+                    
+                    <pre class="shader-code">// 高度混合 - 更自然的过渡
+float HeightBlend(float h1, float h2, float blend, float contrast)
+{
+    float height = h1 * (1 - blend) + h2 * blend;
+    float ma = max(h1 + (1 - blend), h2 + blend) - contrast;
+    float b1 = max(h1 + (1 - blend) - ma, 0);
+    float b2 = max(h2 + blend - ma, 0);
+    return b2 / (b1 + b2);
+}
+
+// 使用
+half h1 = tex1.a;  // 纹理 A 的高度存在 Alpha 通道
+half h2 = tex2.a;  // 纹理 B 的高度
+half t = HeightBlend(h1, h2, _BlendFactor, _Contrast);
+half4 blended = lerp(color1, color2, t);</pre>
+                </div>
+
+                <div class="section">
+                    <h2">🎨 混合模式</h2>
+                    
+                    <pre class="shader-code">// 叠加 (Overlay)
+half3 Overlay(half3 base, half3 blend)
+{
+    return lerp(
+        2.0 * base * blend,
+        1.0 - 2.0 * (1.0 - base) * (1.0 - blend),
+        step(0.5, base)
+    );
+}
+
+// 柔光 (Soft Light)
+half3 SoftLight(half3 base, half3 blend)
+{
+    return lerp(
+        2.0 * base * blend + base * base * (1.0 - 2.0 * blend),
+        sqrt(base) * (2.0 * blend - 1.0) + 2.0 * base * (1.0 - blend),
+        step(0.5, blend)
+    );
+}
+
+// 正片叠底 (Multiply)
+half3 Multiply(half3 base, half3 blend)
+{
+    return base * blend;
+}
+
+// 滤色 (Screen)
+half3 Screen(half3 base, half3 blend)
+{
+    return 1.0 - (1.0 - base) * (1.0 - blend);
+}</pre>
+                </div>
+
+                <div class="section">
+                    <h2">💡 性能提示</h2>
+                    
+                    <div class="tip-box">
+                        <h4">减少采样次数</h4>
+                        <p>每增加一层纹理就增加一次采样。对于移动端，建议最多 3-4 层。可以将多个属性打包到单张纹理的不同通道。</p>
+                    </div>
+                </div>
+
+                <div class="nav-links">
+                    <a href="texture-addressing.html">← 纹理寻址</a>
+                    <a href="lambert.html">Lambert 光照 →</a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

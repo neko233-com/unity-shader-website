@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UV 偏移 - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3">🎨 UV 变换</h3>
+                    <ul>
+                        <li><a href="rotate-uv.html">RotateUV - 旋转矩阵</a></li>
+                        <li><a href="uv-scroll.html">UV 滚动</a></li>
+                        <li><a href="uv-scale.html">UV 缩放</a></li>
+                        <li><a href="uv-offset.html" class="active">UV 偏移</a></li>
+                        <li><a href="uv-animation.html">UV 动画</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1">UV 偏移 (UV Offset)</h1>
+                <p class="subtitle">平移纹理位置</p>
+
+                <div class="section">
+                    <h2">📚 原理</h2>
+                    <p>UV 偏移是最简单的 UV 变换，通过加减常量来移动纹理位置。</p>
+                    
+                    <pre class="shader-code">// 基础偏移
+float2 offsetUV = uv + _Offset.xy;
+
+// Unity 内置方式（使用 _MainTex_ST）
+float2 finalUV = uv * _MainTex_ST.xy + _MainTex_ST.zw;
+//                    ↑ 缩放 (Tiling)    ↑ 偏移 (Offset)</pre>
+                </div>
+
+                <div class="section">
+                    <h2">💻 代码实现</h2>
+                    
+                    <pre class="shader-code">// Properties
+_OffsetX("Offset X", Range(-1, 1)) = 0
+_OffsetY("Offset Y", Range(-1, 1)) = 0
+
+// 或使用 Vector
+_Offset("Offset", Vector) = (0, 0, 0, 0)
+
+// Fragment Shader
+half4 frag(Varyings input) : SV_Target
+{
+    float2 uv = input.uv + float2(_OffsetX, _OffsetY);
+    // 或
+    float2 uv = input.uv + _Offset.xy;
+    
+    return SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, uv);
+}</pre>
+                </div>
+
+                <div class="section">
+                    <h2">🎮 应用场景</h2>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3">🎯 精灵动画</h3>
+                            <p>图集中选择不同帧</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3">📋 面板排版</h3>
+                            <p>调整 UI 纹理位置</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3">🔄 循环背景</h3>
+                            <p>配合 Wrap 模式滚动</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2">💡 结合 TRANSFORM_TEX</h2>
+                    
+                    <pre class="shader-code">// Unity 宏自动处理 Tiling 和 Offset
+// 需要在 CBUFFER 中声明 _BaseMap_ST
+float2 uv = TRANSFORM_TEX(input.uv, _BaseMap);
+
+// 展开后等价于:
+float2 uv = input.uv * _BaseMap_ST.xy + _BaseMap_ST.zw;</pre>
+                </div>
+
+                <div class="nav-links">
+                    <a href="uv-scale.html">← UV 缩放</a>
+                    <a href="uv-animation.html">UV 动画 →</a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

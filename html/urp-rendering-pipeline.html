@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URP 渲染管线 - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="搜索内容...">
+                    <button id="searchBtn">🔍</button>
+                </div>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3>🚀 入门指南</h3>
+                    <ul>
+                        <li><a href="00-introduction.html">教程介绍</a></li>
+                        <li><a href="01-urp-overview.html">URP 概述</a></li>
+                        <li><a href="02-shader-basics.html">Shader 基础</a></li>
+                        <li><a href="03-terminology.html">术语与黑话</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>🔄 渲染流程</h3>
+                    <ul>
+                        <li><a href="urp-rendering-pipeline.html" class="active">URP 渲染管线</a></li>
+                        <li><a href="rendering-stages.html">渲染阶段详解</a></li>
+                        <li><a href="pass-types.html">Pass 类型</a></li>
+                        <li><a href="render-features.html">Render Features</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>📐 坐标空间</h3>
+                    <ul>
+                        <li><a href="coordinate-spaces.html">坐标系概述</a></li>
+                        <li><a href="mvp-matrix.html">MVP 矩阵详解</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>💡 光照系统</h3>
+                    <ul>
+                        <li><a href="lambert.html">Lambert 漫反射</a></li>
+                        <li><a href="phong.html">Phong 高光</a></li>
+                        <li><a href="blinn-phong.html">Blinn-Phong</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1>URP 渲染管线</h1>
+                <p class="subtitle">深入理解 Universal Render Pipeline 的完整渲染流程</p>
+
+                <div class="section">
+                    <h2>📚 渲染管线概述</h2>
+                    
+                    <div class="visual-explanation">
+                        <h3>URP Forward 渲染流程</h3>
+                        <div class="diagram-container">
+                            <svg width="800" height="400" viewBox="0 0 800 400">
+                                <!-- 背景 -->
+                                <rect x="0" y="0" width="800" height="400" fill="#f8f9fa"/>
+                                
+                                <!-- 标题 -->
+                                <text x="400" y="30" text-anchor="middle" font-size="18" font-weight="bold" fill="#2c3e50">URP Forward 渲染管线</text>
+                                
+                                <!-- 阶段块 -->
+                                <!-- 1. Setup -->
+                                <rect x="30" y="60" width="100" height="60" rx="8" fill="#3498db"/>
+                                <text x="80" y="90" text-anchor="middle" fill="white" font-size="12" font-weight="bold">Setup</text>
+                                <text x="80" y="105" text-anchor="middle" fill="white" font-size="10">初始化设置</text>
+                                
+                                <!-- 箭头 -->
+                                <path d="M 130 90 L 155 90" stroke="#4a90e2" stroke-width="2" marker-end="url(#arrow)"/>
+                                
+                                <!-- 2. Culling -->
+                                <rect x="160" y="60" width="100" height="60" rx="8" fill="#9b59b6"/>
+                                <text x="210" y="90" text-anchor="middle" fill="white" font-size="12" font-weight="bold">Culling</text>
+                                <text x="210" y="105" text-anchor="middle" fill="white" font-size="10">视锥体裁剪</text>
+                                
+                                <path d="M 260 90 L 285 90" stroke="#4a90e2" stroke-width="2" marker-end="url(#arrow)"/>
+                                
+                                <!-- 3. Depth Prepass -->
+                                <rect x="290" y="60" width="100" height="60" rx="8" fill="#e74c3c"/>
+                                <text x="340" y="90" text-anchor="middle" fill="white" font-size="12" font-weight="bold">Depth</text>
+                                <text x="340" y="105" text-anchor="middle" fill="white" font-size="10">深度预通道</text>
+                                
+                                <path d="M 390 90 L 415 90" stroke="#4a90e2" stroke-width="2" marker-end="url(#arrow)"/>
+                                
+                                <!-- 4. Opaque -->
+                                <rect x="420" y="60" width="100" height="60" rx="8" fill="#27ae60"/>
+                                <text x="470" y="90" text-anchor="middle" fill="white" font-size="12" font-weight="bold">Opaque</text>
+                                <text x="470" y="105" text-anchor="middle" fill="white" font-size="10">不透明物体</text>
+                                
+                                <path d="M 520 90 L 545 90" stroke="#4a90e2" stroke-width="2" marker-end="url(#arrow)"/>
+                                
+                                <!-- 5. Skybox -->
+                                <rect x="550" y="60" width="100" height="60" rx="8" fill="#f39c12"/>
+                                <text x="600" y="90" text-anchor="middle" fill="white" font-size="12" font-weight="bold">Skybox</text>
+                                <text x="600" y="105" text-anchor="middle" fill="white" font-size="10">天空盒</text>
+                                
+                                <path d="M 650 90 L 675 90" stroke="#4a90e2" stroke-width="2" marker-end="url(#arrow)"/>
+                                
+                                <!-- 6. Transparent -->
+                                <rect x="680" y="60" width="100" height="60" rx="8" fill="#1abc9c"/>
+                                <text x="730" y="90" text-anchor="middle" fill="white" font-size="12" font-weight="bold">Transparent</text>
+                                <text x="730" y="105" text-anchor="middle" fill="white" font-size="10">透明物体</text>
+                                
+                                <!-- 第二行 -->
+                                <path d="M 730 120 L 730 150 L 600 150 L 600 170" stroke="#4a90e2" stroke-width="2" marker-end="url(#arrow)"/>
+                                
+                                <!-- 7. Post Processing -->
+                                <rect x="550" y="180" width="100" height="60" rx="8" fill="#8e44ad"/>
+                                <text x="600" y="210" text-anchor="middle" fill="white" font-size="12" font-weight="bold">Post</text>
+                                <text x="600" y="225" text-anchor="middle" fill="white" font-size="10">后处理</text>
+                                
+                                <path d="M 550 210 L 525 210" stroke="#4a90e2" stroke-width="2" marker-end="url(#arrow)"/>
+                                
+                                <!-- 8. Final Blit -->
+                                <rect x="420" y="180" width="100" height="60" rx="8" fill="#2c3e50"/>
+                                <text x="470" y="210" text-anchor="middle" fill="white" font-size="12" font-weight="bold">Final Blit</text>
+                                <text x="470" y="225" text-anchor="middle" fill="white" font-size="10">最终输出</text>
+                                
+                                <!-- 详细说明 -->
+                                <rect x="30" y="270" width="740" height="110" rx="8" fill="white" stroke="#ddd"/>
+                                <text x="50" y="295" font-size="14" font-weight="bold" fill="#2c3e50">渲染顺序说明：</text>
+                                <text x="50" y="320" font-size="12" fill="#666">1. Setup: 设置渲染目标、清除缓冲区</text>
+                                <text x="50" y="340" font-size="12" fill="#666">2. Culling: 剔除不可见物体（视锥体裁剪、遮挡剔除）</text>
+                                <text x="50" y="360" font-size="12" fill="#666">3. Opaque: 从前往后渲染不透明物体（利用 Early-Z 优化）</text>
+                                <text x="400" y="320" font-size="12" fill="#666">4. Skybox: 渲染天空盒</text>
+                                <text x="400" y="340" font-size="12" fill="#666">5. Transparent: 从后往前渲染透明物体</text>
+                                <text x="400" y="360" font-size="12" fill="#666">6. Post: 应用后处理效果</text>
+                                
+                                <defs>
+                                    <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                        <polygon points="0 0, 10 3.5, 0 7" fill="#4a90e2"/>
+                                    </marker>
+                                </defs>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>🎯 渲染路径</h2>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card" style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);">
+                            <h3>Forward 渲染</h3>
+                            <p><strong>特点：</strong>每个物体计算所有光照</p>
+                            <p><strong>优点：</strong>支持透明、MSAA</p>
+                            <p><strong>适用：</strong>移动端、光源较少</p>
+                        </div>
+                        
+                        <div class="feature-card" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);">
+                            <h3>Forward+ 渲染</h3>
+                            <p><strong>特点：</strong>屏幕空间光源剔除</p>
+                            <p><strong>优点：</strong>支持更多实时光源</p>
+                            <p><strong>适用：</strong>PC、多光源场景</p>
+                        </div>
+                        
+                        <div class="feature-card" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">
+                            <h3>Deferred 渲染</h3>
+                            <p><strong>特点：</strong>延迟光照计算</p>
+                            <p><strong>优点：</strong>大量光源性能好</p>
+                            <p><strong>缺点：</strong>不支持 MSAA</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>📖 术语解释</h2>
+                    
+                    <div class="term-card">
+                        <h3>Render Queue 渲染队列</h3>
+                        <div class="term-details">
+                            <p><strong>作用：</strong>控制物体的渲染顺序</p>
+                            <p><strong>常用值：</strong></p>
+                            <ul>
+                                <li><code>Background (1000)</code> - 最先渲染，如天空盒</li>
+                                <li><code>Geometry (2000)</code> - 默认值，不透明物体</li>
+                                <li><code>AlphaTest (2450)</code> - Alpha 测试物体</li>
+                                <li><code>Transparent (3000)</code> - 透明物体</li>
+                                <li><code>Overlay (4000)</code> - 最后渲染，如 UI</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="term-card">
+                        <h3>LightMode 光照模式</h3>
+                        <div class="term-details">
+                            <p><strong>作用：</strong>指定 Pass 在哪个渲染阶段执行</p>
+                            <p><strong>URP 常用值：</strong></p>
+                            <ul>
+                                <li><code>UniversalForward</code> - 前向渲染主 Pass</li>
+                                <li><code>ShadowCaster</code> - 阴影投射</li>
+                                <li><code>DepthOnly</code> - 仅深度</li>
+                                <li><code>Meta</code> - 烘焙光照贴图</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shader 小技巧 - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3">📝 实践</h3>
+                    <ul>
+                        <li><a href="shader-template.html">Shader 模板</a></li>
+                        <li><a href="shader-magic.html" class="active">Shader 小技巧</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1">Shader 小技巧</h1>
+                <p class="subtitle">实用的 Shader 代码片段集合</p>
+
+                <div class="section">
+                    <h2">🎨 颜色技巧</h2>
+                    
+                    <h3">RGB 转灰度</h3>
+                    <pre class="shader-code">// 标准亮度权重
+half gray = dot(color.rgb, half3(0.299, 0.587, 0.114));
+
+// 简单平均
+half gray = (color.r + color.g + color.b) / 3.0;</pre>
+
+                    <h3">色调分离 (Posterize)</h3>
+                    <pre class="shader-code">float levels = 4.0;
+color.rgb = floor(color.rgb * levels) / levels;</pre>
+
+                    <h3">反色</h3>
+                    <pre class="shader-code">color.rgb = 1.0 - color.rgb;</pre>
+
+                    <h3">调整对比度</h3>
+                    <pre class="shader-code">float contrast = 1.5;
+color.rgb = (color.rgb - 0.5) * contrast + 0.5;</pre>
+                </div>
+
+                <div class="section">
+                    <h2">📐 UV 技巧</h2>
+                    
+                    <h3">极坐标</h3>
+                    <pre class="shader-code">float2 center = float2(0.5, 0.5);
+float2 delta = uv - center;
+float radius = length(delta);
+float angle = atan2(delta.y, delta.x);
+
+// 极坐标 UV
+float2 polarUV = float2(radius, angle / 3.14159 * 0.5 + 0.5);</pre>
+
+                    <h3">棋盘格</h3>
+                    <pre class="shader-code">float2 checker = floor(uv * _TileCount);
+float pattern = fmod(checker.x + checker.y, 2.0);</pre>
+
+                    <h3">圆形遮罩</h3>
+                    <pre class="shader-code">float dist = distance(uv, float2(0.5, 0.5));
+float circle = 1.0 - smoothstep(_Radius - _Edge, _Radius + _Edge, dist);</pre>
+
+                    <h3">像素化</h3>
+                    <pre class="shader-code">float2 pixelUV = floor(uv * _PixelCount) / _PixelCount;</pre>
+                </div>
+
+                <div class="section">
+                    <h2">✨ 效果技巧</h2>
+                    
+                    <h3">闪烁效果</h3>
+                    <pre class="shader-code">float blink = sin(_Time.y * _Speed) * 0.5 + 0.5;
+color.rgb += _BlinkColor.rgb * blink;</pre>
+
+                    <h3">描边（基于深度）</h3>
+                    <pre class="shader-code">// 采样周围深度
+float d0 = SampleSceneDepth(uv);
+float d1 = SampleSceneDepth(uv + float2(_Offset, 0));
+float d2 = SampleSceneDepth(uv + float2(0, _Offset));
+
+// 深度差异 = 边缘
+float edge = abs(d0 - d1) + abs(d0 - d2);
+edge = step(_Threshold, edge);</pre>
+
+                    <h3">扫描线</h3>
+                    <pre class="shader-code">float scanline = sin(uv.y * _LineCount + _Time.y * _Speed);
+scanline = smoothstep(0.0, 0.5, scanline);
+color.rgb *= 0.8 + scanline * 0.2;</pre>
+
+                    <h3">噪声</h3>
+                    <pre class="shader-code">// 简单伪随机
+float rand(float2 co)
+{
+    return frac(sin(dot(co, float2(12.9898, 78.233))) * 43758.5453);
+}
+
+// 使用
+float noise = rand(uv + _Time.y);</pre>
+                </div>
+
+                <div class="section">
+                    <h2">🔧 数学技巧</h2>
+                    
+                    <h3">安全归一化</h3>
+                    <pre class="shader-code">float3 safeNormalize(float3 v)
+{
+    float len = length(v);
+    return len > 0.0001 ? v / len : float3(0, 0, 1);
+}</pre>
+
+                    <h3">重映射</h3>
+                    <pre class="shader-code">float remap(float value, float inMin, float inMax, float outMin, float outMax)
+{
+    return outMin + (value - inMin) * (outMax - outMin) / (inMax - inMin);
+}</pre>
+
+                    <h3">平滑最小值</h3>
+                    <pre class="shader-code">// 用于混合 SDF
+float smoothMin(float a, float b, float k)
+{
+    float h = saturate(0.5 + 0.5 * (b - a) / k);
+    return lerp(b, a, h) - k * h * (1.0 - h);
+}</pre>
+                </div>
+
+                <div class="section">
+                    <h2">📱 移动端优化</h2>
+                    
+                    <pre class="shader-code">// 用 mad 代替乘加（部分 GPU 更快）
+// result = a * b + c
+result = mad(a, b, c);
+
+// 避免 pow，用乘法近似
+// pow(x, 2) = x * x
+// pow(x, 4) = x * x * x * x  或  (x * x) * (x * x)
+
+// 避免 normalize，预计算或使用已归一化的值
+
+// 使用 half 而非 float
+half3 color = half3(1, 0, 0);</pre>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

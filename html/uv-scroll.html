@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UV 滚动 - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3>🎨 UV 变换</h3>
+                    <ul>
+                        <li><a href="rotate-uv.html">RotateUV - 旋转矩阵</a></li>
+                        <li><a href="uv-scroll.html" class="active">UV 滚动</a></li>
+                        <li><a href="uv-scale.html">UV 缩放</a></li>
+                        <li><a href="uv-offset.html">UV 偏移</a></li>
+                        <li><a href="uv-animation.html">UV 动画</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1>UV 滚动 (UV Scrolling)</h1>
+                <p class="subtitle">实现纹理流动效果</p>
+
+                <div class="section">
+                    <h2>📚 原理</h2>
+                    <p>UV 滚动是最常用的 UV 动画技术之一。通过随时间改变 UV 偏移，实现纹理"流动"的视觉效果。</p>
+                    
+                    <div class="diagram-container">
+                        <svg viewBox="0 0 500 200" class="flow-diagram">
+                            <defs>
+                                <pattern id="uvGrid" width="50" height="50" patternUnits="userSpaceOnUse">
+                                    <rect fill="#2a2a40" width="50" height="50"/>
+                                    <rect fill="#3a3a50" width="25" height="25"/>
+                                    <rect fill="#3a3a50" x="25" y="25" width="25" height="25"/>
+                                </pattern>
+                                <linearGradient id="arrowGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" style="stop-color:#4a9eff;stop-opacity:0.5"/>
+                                    <stop offset="100%" style="stop-color:#4a9eff;stop-opacity:1"/>
+                                </linearGradient>
+                            </defs>
+                            
+                            <rect x="50" y="50" width="100" height="100" fill="url(#uvGrid)" stroke="#4a9eff" stroke-width="2"/>
+                            <text x="100" y="175" text-anchor="middle" fill="#ccc" font-size="12">原始 UV</text>
+                            
+                            <path d="M 180 100 L 220 100" stroke="url(#arrowGrad)" stroke-width="3" fill="none" marker-end="url(#arrowhead)"/>
+                            <text x="200" y="90" text-anchor="middle" fill="#888" font-size="11">+ _Time</text>
+                            
+                            <rect x="250" y="50" width="100" height="100" fill="url(#uvGrid)" stroke="#00ff88" stroke-width="2" transform="translate(10, 0)"/>
+                            <text x="310" y="175" text-anchor="middle" fill="#ccc" font-size="12">滚动后 UV</text>
+                            
+                            <defs>
+                                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                    <polygon points="0 0, 10 3.5, 0 7" fill="#4a9eff"/>
+                                </marker>
+                            </defs>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>💻 代码实现</h2>
+                    
+                    <h3>基础滚动</h3>
+                    <pre class="shader-code">// Properties
+_ScrollSpeed("Scroll Speed", Vector) = (1, 0, 0, 0)
+
+// Fragment Shader
+half4 frag(Varyings input) : SV_Target
+{
+    // 计算滚动 UV
+    float2 scrollUV = input.uv + _ScrollSpeed.xy * _Time.y;
+    
+    // 采样纹理
+    half4 color = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, scrollUV);
+    
+    return color;
+}</pre>
+
+                    <h3>分层滚动（视差效果）</h3>
+                    <pre class="shader-code">// 多层滚动，不同速度
+float2 layer1UV = input.uv + float2(0.5, 0) * _Time.y;  // 近景快
+float2 layer2UV = input.uv + float2(0.2, 0) * _Time.y;  // 远景慢
+
+half4 layer1 = SAMPLE_TEXTURE2D(_Layer1Map, sampler_Layer1Map, layer1UV);
+half4 layer2 = SAMPLE_TEXTURE2D(_Layer2Map, sampler_Layer2Map, layer2UV);
+
+// 混合
+half4 final = lerp(layer2, layer1, layer1.a);</pre>
+                </div>
+
+                <div class="section">
+                    <h2>🎮 应用场景</h2>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>🌊 水流效果</h3>
+                            <p>河流、瀑布、海浪的流动</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>☁️ 云层移动</h3>
+                            <p>天空盒云层、雾气飘动</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🔥 火焰燃烧</h3>
+                            <p>火焰纹理向上流动</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>⚡ 能量流</h3>
+                            <p>科幻管道能量流动</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>⚠️ 注意事项</h2>
+                    
+                    <div class="warning-box">
+                        <h4>纹理边缘模式</h4>
+                        <p>确保纹理设置为 <code>Wrap Mode: Repeat</code>，否则滚动到边缘会出现拉伸。</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

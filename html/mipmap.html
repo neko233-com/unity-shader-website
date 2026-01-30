@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mipmap - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3">🖼️ 纹理</h3>
+                    <ul>
+                        <li><a href="texture-sampling.html">纹理采样</a></li>
+                        <li><a href="mipmap.html" class="active">Mipmap</a></li>
+                        <li><a href="texture-addressing.html">纹理寻址</a></li>
+                        <li><a href="texture-blend.html">纹理混合</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1>Mipmap</h1>
+                <p class="subtitle">多级渐远纹理</p>
+
+                <div class="section">
+                    <h2">📚 什么是 Mipmap</h2>
+                    <p>Mipmap 是预计算的纹理金字塔，每一级分辨率减半，用于在远距离时使用较小的纹理，提升性能和减少闪烁。</p>
+                    
+                    <svg width="400" height="200" viewBox="0 0 400 200">
+                        <defs>
+                            <pattern id="tex0" width="8" height="8" patternUnits="userSpaceOnUse">
+                                <rect width="4" height="4" fill="#4a90d9"/>
+                                <rect x="4" y="4" width="4" height="4" fill="#4a90d9"/>
+                            </pattern>
+                            <pattern id="tex1" width="4" height="4" patternUnits="userSpaceOnUse">
+                                <rect width="2" height="2" fill="#5a9de9"/>
+                                <rect x="2" y="2" width="2" height="2" fill="#5a9de9"/>
+                            </pattern>
+                        </defs>
+                        
+                        <!-- Level 0 -->
+                        <rect x="20" y="20" width="128" height="128" fill="url(#tex0)" stroke="#333" stroke-width="2"/>
+                        <text x="84" y="165" text-anchor="middle" font-size="12">Level 0 (256×256)</text>
+                        
+                        <!-- Level 1 -->
+                        <rect x="170" y="52" width="64" height="64" fill="url(#tex1)" stroke="#333" stroke-width="2"/>
+                        <text x="202" y="135" text-anchor="middle" font-size="12">Level 1 (128×128)</text>
+                        
+                        <!-- Level 2 -->
+                        <rect x="260" y="68" width="32" height="32" fill="#6ab0f9" stroke="#333" stroke-width="2"/>
+                        <text x="276" y="120" text-anchor="middle" font-size="12">Level 2</text>
+                        
+                        <!-- Level 3 -->
+                        <rect x="320" y="76" width="16" height="16" fill="#7ac0ff" stroke="#333" stroke-width="2"/>
+                        <text x="328" y="110" text-anchor="middle" font-size="10">L3</text>
+                        
+                        <!-- Level 4 -->
+                        <rect x="360" y="80" width="8" height="8" fill="#8ad0ff" stroke="#333" stroke-width="2"/>
+                        <text x="364" y="100" text-anchor="middle" font-size="10">L4</text>
+                    </svg>
+                </div>
+
+                <div class="section">
+                    <h2">⚡ 优点</h2>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3">🚀 性能提升</h3>
+                            <p>远处物体采样小纹理，减少带宽</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3">✨ 减少闪烁</h3>
+                            <p>避免远处纹理的摩尔纹和闪烁</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3">💾 仅增 33% 内存</h3>
+                            <p>所有级别总和 = 原始 × 1.33</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2">🔧 Unity 设置</h2>
+                    
+                    <p>在纹理导入设置中：</p>
+                    <ul>
+                        <li><strong>Generate Mip Maps</strong>：启用 Mipmap 生成</li>
+                        <li><strong>Mip Map Filtering</strong>：Box（快）/ Kaiser（质量高）</li>
+                        <li><strong>Fadeout Mip Maps</strong>：远处渐变为灰色</li>
+                    </ul>
+                </div>
+
+                <div class="section">
+                    <h2">💻 手动控制 Mip Level</h2>
+                    
+                    <pre class="shader-code">// 自动选择 Mip Level（默认）
+half4 color = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv);
+
+// 手动指定 Mip Level（需要在 Fragment Shader 中）
+half4 color = SAMPLE_TEXTURE2D_LOD(_MainTex, sampler_MainTex, uv, mipLevel);
+
+// 带 Bias 的采样（在自动选择基础上偏移）
+half4 color = SAMPLE_TEXTURE2D_BIAS(_MainTex, sampler_MainTex, uv, bias);
+
+// 计算当前使用的 Mip Level（调试用）
+float mip = _MainTex.CalculateLevelOfDetail(sampler_MainTex, uv);</pre>
+                </div>
+
+                <div class="section">
+                    <h2">⚠️ 注意事项</h2>
+                    
+                    <div class="warning-box">
+                        <h4">UI 纹理</h4>
+                        <p>UI 纹理通常应关闭 Mipmap，因为它们总是以原始大小显示。</p>
+                    </div>
+                    
+                    <div class="warning-box">
+                        <h4">法线贴图</h4>
+                        <p>法线贴图的 Mipmap 需要特殊处理，Unity 会自动进行正确的过滤。</p>
+                    </div>
+                </div>
+
+                <div class="nav-links">
+                    <a href="texture-sampling.html">← 纹理采样</a>
+                    <a href="texture-addressing.html">纹理寻址 →</a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

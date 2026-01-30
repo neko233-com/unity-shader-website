@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RotateUV 旋转矩阵 - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="搜索内容...">
+                    <button id="searchBtn">🔍</button>
+                </div>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3>🚀 入门指南</h3>
+                    <ul>
+                        <li><a href="00-introduction.html">教程介绍</a></li>
+                        <li><a href="01-urp-overview.html">URP 概述</a></li>
+                        <li><a href="02-shader-basics.html">Shader 基础</a></li>
+                        <li><a href="03-terminology.html">术语与黑话</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>🎨 UV 变换</h3>
+                    <ul>
+                        <li><a href="rotate-uv.html" class="active">RotateUV - 旋转矩阵</a></li>
+                        <li><a href="uv-scroll.html">UV 滚动</a></li>
+                        <li><a href="uv-scale.html">UV 缩放</a></li>
+                        <li><a href="uv-offset.html">UV 偏移</a></li>
+                        <li><a href="uv-animation.html">UV 动画</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>💡 光照系统</h3>
+                    <ul>
+                        <li><a href="lambert.html">Lambert 漫反射</a></li>
+                        <li><a href="phong.html">Phong 高光</a></li>
+                        <li><a href="blinn-phong.html">Blinn-Phong</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1>RotateUV - 旋转矩阵</h1>
+                <p class="subtitle">理解 2D 旋转矩阵的数学原理和 Shader 实现</p>
+
+                <div class="section">
+                    <h2>📚 理论基础</h2>
+                    
+                    <h3>2D 旋转矩阵</h3>
+                    <p>在 2D 空间中，绕原点旋转角度 θ 的变换可以用以下矩阵表示：</p>
+                    
+                    <div class="matrix-visualization">
+                        <div class="matrix-box">
+                            <h4>旋转矩阵 R(θ)</h4>
+                            <div class="matrix">
+                                <div class="matrix-row">
+                                    <div class="matrix-cell">cos(θ)</div>
+                                    <div class="matrix-cell">-sin(θ)</div>
+                                </div>
+                                <div class="matrix-row">
+                                    <div class="matrix-cell">sin(θ)</div>
+                                    <div class="matrix-cell">cos(θ)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h3>旋转公式</h3>
+                    <div class="term-card">
+                        <div class="term-details">
+                            <p><strong>原始坐标：</strong>(x, y)</p>
+                            <p><strong>旋转后：</strong></p>
+                            <ul>
+                                <li>x' = x × cos(θ) - y × sin(θ)</li>
+                                <li>y' = x × sin(θ) + y × cos(θ)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>🎨 可视化演示</h2>
+                    <p>调整参数，实时观察 UV 坐标的旋转变换效果：</p>
+                    
+                    <div class="visualization-container">
+                        <div class="controls">
+                            <div class="control-group">
+                                <label>旋转角度: <span class="value-display" id="angleValue">0</span>°</label>
+                                <input type="range" id="angleSlider" min="0" max="360" value="0" step="1">
+                            </div>
+                            <div class="control-group">
+                                <label>中心点 X: <span class="value-display" id="centerXValue">0.50</span></label>
+                                <input type="range" id="centerXSlider" min="0" max="1" value="0.5" step="0.01">
+                            </div>
+                            <div class="control-group">
+                                <label>中心点 Y: <span class="value-display" id="centerYValue">0.50</span></label>
+                                <input type="range" id="centerYSlider" min="0" max="1" value="0.5" step="0.01">
+                            </div>
+                        </div>
+                        
+                        <div class="controls">
+                            <div class="control-group">
+                                <label><input type="checkbox" id="showGrid" checked> 显示网格</label>
+                            </div>
+                            <div class="control-group">
+                                <label><input type="checkbox" id="showOriginal" checked> 显示原始位置</label>
+                            </div>
+                            <div class="control-group">
+                                <label><input type="checkbox" id="animateRotation"> 自动旋转</label>
+                            </div>
+                        </div>
+                        
+                        <div class="canvas-container">
+                            <canvas id="rotationCanvas" width="800" height="600"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>💻 代码实现</h2>
+                    
+                    <h3>HLSL 旋转函数</h3>
+                    <pre class="shader-code">// UV 旋转函数
+// uv: 输入的 UV 坐标
+// rotation: 旋转角度（弧度）
+// center: 旋转中心点
+float2 RotateUV(float2 uv, float rotation, float2 center)
+{
+    // 1. 将 UV 移动到旋转中心
+    uv -= center;
+    
+    // 2. 计算 sin 和 cos
+    float s = sin(rotation);
+    float c = cos(rotation);
+    
+    // 3. 应用旋转矩阵
+    float2 rotatedUV;
+    rotatedUV.x = uv.x * c - uv.y * s;
+    rotatedUV.y = uv.x * s + uv.y * c;
+    
+    // 4. 移回原位置
+    rotatedUV += center;
+    
+    return rotatedUV;
+}</pre>
+
+                    <h3>在 Fragment Shader 中使用</h3>
+                    <pre class="shader-code">half4 frag(Varyings input) : SV_Target
+{
+    // 旋转角度（可以用 _Time 做动画）
+    float rotation = _Rotation * 3.14159 / 180.0; // 度转弧度
+    
+    // 绕中心点旋转
+    float2 center = float2(0.5, 0.5);
+    float2 rotatedUV = RotateUV(input.uv, rotation, center);
+    
+    // 使用旋转后的 UV 采样纹理
+    half4 color = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, rotatedUV);
+    
+    return color;
+}</pre>
+                </div>
+
+                <div class="section">
+                    <h2>🔧 实现步骤</h2>
+                    
+                    <div class="steps">
+                        <div class="step">
+                            <span class="step-number">1</span>
+                            <strong>移动到旋转中心</strong>
+                            <p>将 UV 坐标减去中心点，使旋转中心变为原点</p>
+                        </div>
+                        
+                        <div class="step">
+                            <span class="step-number">2</span>
+                            <strong>计算三角函数</strong>
+                            <p>计算旋转角度的 sin 和 cos 值</p>
+                        </div>
+                        
+                        <div class="step">
+                            <span class="step-number">3</span>
+                            <strong>应用旋转矩阵</strong>
+                            <p>使用旋转矩阵公式计算新坐标</p>
+                        </div>
+                        
+                        <div class="step">
+                            <span class="step-number">4</span>
+                            <strong>移回原位置</strong>
+                            <p>将坐标加回中心点偏移</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>🎮 应用场景</h2>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>🌀 旋转动画</h3>
+                            <p>技能特效、魔法阵旋转、加载动画</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🎯 雷达扫描</h3>
+                            <p>小地图雷达、扫描线效果</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🌊 水面效果</h3>
+                            <p>结合 UV 滚动制作水波纹</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>📖 术语解释</h2>
+                    
+                    <div class="term-card">
+                        <h3>弧度 vs 角度</h3>
+                        <div class="term-details">
+                            <p><strong>角度 (Degrees)：</strong>一圈 = 360°</p>
+                            <p><strong>弧度 (Radians)：</strong>一圈 = 2π ≈ 6.283</p>
+                            <p><strong>转换公式：</strong>弧度 = 角度 × π / 180</p>
+                            <p><strong>HLSL 函数：</strong>sin/cos 使用弧度，需要先转换</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+    <script src="../js/rotate-uv-visualization.js"></script>
+</body>
+</html>

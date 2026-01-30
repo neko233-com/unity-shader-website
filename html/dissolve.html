@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>溶解效果 - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3>✨ 特效系统</h3>
+                    <ul>
+                        <li><a href="dissolve.html" class="active">溶解效果</a></li>
+                        <li><a href="fresnel.html">菲涅尔效果</a></li>
+                        <li><a href="rim-light.html">边缘光</a></li>
+                        <li><a href="distortion.html">扭曲效果</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1>溶解效果 (Dissolve Effect)</h1>
+                <p class="subtitle">使用噪声纹理实现物体消融</p>
+
+                <div class="section">
+                    <h2>📚 原理</h2>
+                    <p>溶解效果的核心是使用噪声纹理的灰度值与阈值比较，低于阈值的像素被裁剪。通过动画改变阈值，实现逐渐消失的效果。</p>
+                    
+                    <div class="diagram-container">
+                        <svg viewBox="0 0 500 150" class="dissolve-diagram">
+                            <!-- 原图 -->
+                            <rect x="20" y="30" width="100" height="100" fill="#4a9eff" rx="5"/>
+                            <text x="70" y="150" text-anchor="middle" fill="#ccc" font-size="12">原始物体</text>
+                            
+                            <!-- + -->
+                            <text x="150" y="85" fill="#fff" font-size="24">+</text>
+                            
+                            <!-- 噪声 -->
+                            <rect x="180" y="30" width="100" height="100" fill="url(#noisePattern)" rx="5"/>
+                            <text x="230" y="150" text-anchor="middle" fill="#ccc" font-size="12">噪声纹理</text>
+                            
+                            <!-- = -->
+                            <text x="310" y="85" fill="#fff" font-size="24">=</text>
+                            
+                            <!-- 结果 -->
+                            <rect x="340" y="30" width="100" height="100" fill="#4a9eff" rx="5" style="mask: url(#dissolveMask)"/>
+                            <text x="390" y="150" text-anchor="middle" fill="#ccc" font-size="12">溶解结果</text>
+                            
+                            <defs>
+                                <pattern id="noisePattern" width="10" height="10" patternUnits="userSpaceOnUse">
+                                    <rect width="10" height="10" fill="#333"/>
+                                    <rect width="5" height="5" fill="#666"/>
+                                    <rect x="5" y="5" width="5" height="5" fill="#888"/>
+                                </pattern>
+                            </defs>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>💻 代码实现</h2>
+                    
+                    <h3>基础溶解 Shader</h3>
+                    <pre class="shader-code">// Properties
+_DissolveMap("Dissolve Map", 2D) = "white" {}
+_DissolveThreshold("Dissolve Threshold", Range(0, 1)) = 0
+_EdgeWidth("Edge Width", Range(0, 0.1)) = 0.05
+_EdgeColor("Edge Color", Color) = (1, 0.5, 0, 1)
+
+// Fragment Shader
+half4 frag(Varyings input) : SV_Target
+{
+    // 采样溶解贴图
+    float dissolveValue = SAMPLE_TEXTURE2D(_DissolveMap, sampler_DissolveMap, input.uv).r;
+    
+    // 裁剪低于阈值的像素
+    clip(dissolveValue - _DissolveThreshold);
+    
+    // 采样基础颜色
+    half4 baseColor = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv);
+    
+    // 边缘发光
+    float edge = 1 - smoothstep(0, _EdgeWidth, dissolveValue - _DissolveThreshold);
+    half3 finalColor = lerp(baseColor.rgb, _EdgeColor.rgb, edge);
+    
+    return half4(finalColor, baseColor.a);
+}</pre>
+
+                    <h3>完整 Shader 文件结构</h3>
+                    <pre class="shader-code">Shader "Custom/Dissolve"
+{
+    Properties
+    {
+        _BaseMap("Base Map", 2D) = "white" {}
+        _BaseColor("Base Color", Color) = (1, 1, 1, 1)
+        _DissolveMap("Dissolve Map", 2D) = "white" {}
+        _DissolveThreshold("Threshold", Range(0, 1)) = 0
+        _EdgeWidth("Edge Width", Range(0, 0.2)) = 0.05
+        _EdgeColor("Edge Color", Color) = (1, 0.5, 0, 1)
+    }
+    
+    SubShader
+    {
+        Tags { "RenderType"="Opaque" "RenderPipeline"="UniversalPipeline" }
+        
+        Pass
+        {
+            HLSLPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float2 uv : TEXCOORD0;
+            };
+            
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float2 uv : TEXCOORD0;
+            };
+            
+            TEXTURE2D(_BaseMap);
+            SAMPLER(sampler_BaseMap);
+            TEXTURE2D(_DissolveMap);
+            SAMPLER(sampler_DissolveMap);
+            
+            CBUFFER_START(UnityPerMaterial)
+                float4 _BaseMap_ST;
+                half4 _BaseColor;
+                float _DissolveThreshold;
+                float _EdgeWidth;
+                half4 _EdgeColor;
+            CBUFFER_END
+            
+            Varyings vert(Attributes input)
+            {
+                Varyings output;
+                output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
+                output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+                return output;
+            }
+            
+            half4 frag(Varyings input) : SV_Target
+            {
+                float dissolve = SAMPLE_TEXTURE2D(_DissolveMap, sampler_DissolveMap, input.uv).r;
+                clip(dissolve - _DissolveThreshold);
+                
+                half4 baseColor = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv) * _BaseColor;
+                
+                float edge = 1 - smoothstep(0, _EdgeWidth, dissolve - _DissolveThreshold);
+                half3 finalColor = lerp(baseColor.rgb, _EdgeColor.rgb, edge);
+                
+                return half4(finalColor, 1);
+            }
+            ENDHLSL
+        }
+    }
+}</pre>
+                </div>
+
+                <div class="section">
+                    <h2>🎮 应用场景</h2>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>💀 角色死亡</h3>
+                            <p>敌人被击败后的消失效果</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>✨ 传送门</h3>
+                            <p>物体进入传送门时的溶解</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🔥 燃烧效果</h3>
+                            <p>配合橙色边缘模拟燃烧</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>⚡ 数字化</h3>
+                            <p>科幻风格的像素化消失</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>💡 技巧</h2>
+                    
+                    <div class="tip-box">
+                        <h4>多层边缘</h4>
+                        <pre class="shader-code">// 双色边缘
+float edge1 = 1 - smoothstep(0, _EdgeWidth, dissolve - _DissolveThreshold);
+float edge2 = 1 - smoothstep(0, _EdgeWidth * 2, dissolve - _DissolveThreshold);
+
+half3 color = baseColor.rgb;
+color = lerp(color, _EdgeColor2.rgb, edge2); // 外层
+color = lerp(color, _EdgeColor1.rgb, edge1); // 内层</pre>
+                    </div>
+                    
+                    <div class="tip-box">
+                        <h4>方向性溶解</h4>
+                        <pre class="shader-code">// 从下往上溶解
+float dirDissolve = input.positionOS.y * 0.5 + 0.5; // 归一化高度
+float finalDissolve = dissolve * dirDissolve;
+clip(finalDissolve - _DissolveThreshold);</pre>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

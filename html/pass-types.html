@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pass 类型 - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3">🔄 渲染管线</h3>
+                    <ul>
+                        <li><a href="urp-rendering-pipeline.html">URP 渲染流程</a></li>
+                        <li><a href="rendering-stages.html">渲染阶段</a></li>
+                        <li><a href="pass-types.html" class="active">Pass 类型</a></li>
+                        <li><a href="render-features.html">Render Features</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1>URP Pass 类型</h1>
+                <p class="subtitle">理解不同渲染通道的用途</p>
+
+                <div class="section">
+                    <h2">📚 什么是 Pass</h2>
+                    <p>Pass 是 Shader 中的一个渲染通道，每个 Pass 执行一次完整的渲染。URP 使用 LightMode 标签来指定 Pass 的用途。</p>
+                </div>
+
+                <div class="section">
+                    <h2">🏷️ URP 常用 Pass 类型</h2>
+                    
+                    <h3>UniversalForward</h3>
+                    <div class="term-card">
+                        <div class="term-details">
+                            <p><strong>用途：</strong>主要的前向渲染 Pass</p>
+                            <p><strong>执行时机：</strong>渲染不透明和透明物体</p>
+                            <pre class="shader-code">Pass
+{
+    Name "ForwardLit"
+    Tags { "LightMode" = "UniversalForward" }
+    // ...
+}</pre>
+                        </div>
+                    </div>
+                    
+                    <h3>ShadowCaster</h3>
+                    <div class="term-card">
+                        <div class="term-details">
+                            <p><strong>用途：</strong>生成阴影贴图</p>
+                            <p><strong>执行时机：</strong>阴影计算阶段</p>
+                            <pre class="shader-code">Pass
+{
+    Name "ShadowCaster"
+    Tags { "LightMode" = "ShadowCaster" }
+    // 通常只输出深度，不需要颜色
+}</pre>
+                        </div>
+                    </div>
+                    
+                    <h3>DepthOnly</h3>
+                    <div class="term-card">
+                        <div class="term-details">
+                            <p><strong>用途：</strong>仅写入深度缓冲</p>
+                            <p><strong>执行时机：</strong>深度预 Pass 或深度纹理生成</p>
+                            <pre class="shader-code">Pass
+{
+    Name "DepthOnly"
+    Tags { "LightMode" = "DepthOnly" }
+    ColorMask 0  // 不写入颜色
+}</pre>
+                        </div>
+                    </div>
+                    
+                    <h3>DepthNormals</h3>
+                    <div class="term-card">
+                        <div class="term-details">
+                            <p><strong>用途：</strong>写入深度和法线信息</p>
+                            <p><strong>执行时机：</strong>SSAO 等后处理需要</p>
+                        </div>
+                    </div>
+                    
+                    <h3>Meta</h3>
+                    <div class="term-card">
+                        <div class="term-details">
+                            <p><strong>用途：</strong>光照贴图烘焙</p>
+                            <p><strong>执行时机：</strong>编辑器烘焙 Lightmap</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2">💻 完整 Shader 结构</h2>
+                    
+                    <pre class="shader-code">Shader "Custom/URPComplete"
+{
+    Properties { /* ... */ }
+    
+    SubShader
+    {
+        Tags { "RenderType"="Opaque" "RenderPipeline"="UniversalPipeline" }
+        
+        // 主渲染 Pass
+        Pass
+        {
+            Name "ForwardLit"
+            Tags { "LightMode" = "UniversalForward" }
+            
+            HLSLPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            // 光照和阴影相关的 multi_compile
+            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS
+            #pragma multi_compile _ _ADDITIONAL_LIGHTS
+            
+            // ... 顶点和片段着色器代码
+            ENDHLSL
+        }
+        
+        // 阴影投射 Pass
+        Pass
+        {
+            Name "ShadowCaster"
+            Tags { "LightMode" = "ShadowCaster" }
+            
+            HLSLPROGRAM
+            #pragma vertex ShadowPassVertex
+            #pragma fragment ShadowPassFragment
+            #include "Packages/com.unity.render-pipelines.universal/Shaders/ShadowCasterPass.hlsl"
+            ENDHLSL
+        }
+        
+        // 深度 Pass
+        Pass
+        {
+            Name "DepthOnly"
+            Tags { "LightMode" = "DepthOnly" }
+            ColorMask 0
+            
+            HLSLPROGRAM
+            #pragma vertex DepthOnlyVertex
+            #pragma fragment DepthOnlyFragment
+            #include "Packages/com.unity.render-pipelines.universal/Shaders/DepthOnlyPass.hlsl"
+            ENDHLSL
+        }
+    }
+}</pre>
+                </div>
+
+                <div class="section">
+                    <h2">📊 Pass 执行顺序</h2>
+                    
+                    <div class="steps">
+                        <div class="step">
+                            <span class="step-number">1</span>
+                            <strong>ShadowCaster</strong>
+                            <p>生成阴影贴图</p>
+                        </div>
+                        
+                        <div class="step">
+                            <span class="step-number">2</span>
+                            <strong>DepthOnly (可选)</strong>
+                            <p>深度预 Pass</p>
+                        </div>
+                        
+                        <div class="step">
+                            <span class="step-number">3</span>
+                            <strong>UniversalForward (不透明)</strong>
+                            <p>渲染不透明物体</p>
+                        </div>
+                        
+                        <div class="step">
+                            <span class="step-number">4</span>
+                            <strong>UniversalForward (透明)</strong>
+                            <p>渲染透明物体</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2">💡 技巧</h2>
+                    
+                    <div class="tip-box">
+                        <h4">使用内置 Pass</h4>
+                        <p>URP 提供了预制的 Pass hlsl 文件，可以直接引用：</p>
+                        <pre class="shader-code">// 使用内置的阴影Pass
+#include "Packages/com.unity.render-pipelines.universal/Shaders/ShadowCasterPass.hlsl"
+
+// 使用内置的深度Pass
+#include "Packages/com.unity.render-pipelines.universal/Shaders/DepthOnlyPass.hlsl"</pre>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>扭曲效果 - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3>✨ 特效系统</h3>
+                    <ul>
+                        <li><a href="dissolve.html">溶解效果</a></li>
+                        <li><a href="fresnel.html">菲涅尔效果</a></li>
+                        <li><a href="rim-light.html">边缘光</a></li>
+                        <li><a href="distortion.html" class="active">扭曲效果</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1>扭曲效果 (Distortion)</h1>
+                <p class="subtitle">屏幕空间的折射和扭曲</p>
+
+                <div class="section">
+                    <h2>📚 原理</h2>
+                    <p>扭曲效果通过偏移屏幕 UV 来模拟折射、热浪、水下等视觉效果。核心是采样屏幕颜色纹理（_CameraOpaqueTexture）时使用偏移后的 UV。</p>
+                    
+                    <div class="diagram-container">
+                        <svg viewBox="0 0 400 200" class="distortion-diagram">
+                            <!-- 原始位置 -->
+                            <rect x="50" y="50" width="80" height="100" fill="#4a9eff" opacity="0.5" stroke="#4a9eff"/>
+                            <text x="90" y="170" text-anchor="middle" fill="#4a9eff" font-size="11">原始像素</text>
+                            
+                            <!-- 箭头 -->
+                            <path d="M 150 100 Q 180 80 210 100" stroke="#ffff00" stroke-width="2" fill="none" marker-end="url(#distArrow)"/>
+                            <text x="180" y="70" text-anchor="middle" fill="#ffff00" font-size="10">UV 偏移</text>
+                            
+                            <!-- 扭曲后 -->
+                            <rect x="220" y="40" width="80" height="100" fill="#ff8844" opacity="0.5" stroke="#ff8844" transform="skewX(-10)"/>
+                            <text x="270" y="170" text-anchor="middle" fill="#ff8844" font-size="11">采样位置</text>
+                            
+                            <defs>
+                                <marker id="distArrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                    <polygon points="0 0, 10 3.5, 0 7" fill="#ffff00"/>
+                                </marker>
+                            </defs>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>💻 URP 实现</h2>
+                    
+                    <h3>基础扭曲 Shader</h3>
+                    <pre class="shader-code">Shader "Custom/Distortion"
+{
+    Properties
+    {
+        _DistortionMap("Distortion Map", 2D) = "bump" {}
+        _DistortionStrength("Strength", Range(0, 0.1)) = 0.02
+    }
+    
+    SubShader
+    {
+        Tags { "RenderType"="Transparent" "Queue"="Transparent" "RenderPipeline"="UniversalPipeline" }
+        
+        Pass
+        {
+            HLSLPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareOpaqueTexture.hlsl"
+            
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float2 uv : TEXCOORD0;
+            };
+            
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float2 uv : TEXCOORD0;
+                float4 screenPos : TEXCOORD1;
+            };
+            
+            TEXTURE2D(_DistortionMap);
+            SAMPLER(sampler_DistortionMap);
+            
+            CBUFFER_START(UnityPerMaterial)
+                float4 _DistortionMap_ST;
+                float _DistortionStrength;
+            CBUFFER_END
+            
+            Varyings vert(Attributes input)
+            {
+                Varyings output;
+                output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
+                output.uv = TRANSFORM_TEX(input.uv, _DistortionMap);
+                output.screenPos = ComputeScreenPos(output.positionCS);
+                return output;
+            }
+            
+            half4 frag(Varyings input) : SV_Target
+            {
+                // 采样扭曲贴图（法线贴图格式）
+                half4 distortTex = SAMPLE_TEXTURE2D(_DistortionMap, sampler_DistortionMap, input.uv);
+                half2 distortion = (distortTex.xy * 2.0 - 1.0) * _DistortionStrength;
+                
+                // 计算屏幕 UV
+                float2 screenUV = input.screenPos.xy / input.screenPos.w;
+                
+                // 应用扭曲
+                screenUV += distortion;
+                
+                // 采样屏幕颜色
+                half4 sceneColor = SAMPLE_TEXTURE2D(_CameraOpaqueTexture, sampler_CameraOpaqueTexture, screenUV);
+                
+                return sceneColor;
+            }
+            ENDHLSL
+        }
+    }
+}</pre>
+
+                    <h3>动态热浪效果</h3>
+                    <pre class="shader-code">// 使用噪声和时间产生动态扭曲
+float2 AnimatedDistortion(float2 uv, float time)
+{
+    // 多层噪声叠加
+    float2 offset1 = SAMPLE_TEXTURE2D(_NoiseMap, sampler_NoiseMap, uv + time * 0.1).xy;
+    float2 offset2 = SAMPLE_TEXTURE2D(_NoiseMap, sampler_NoiseMap, uv * 2 - time * 0.15).xy;
+    
+    float2 distortion = (offset1 + offset2 - 1.0) * _Strength;
+    return distortion;
+}</pre>
+                </div>
+
+                <div class="section">
+                    <h2">⚙️ URP 设置</h2>
+                    
+                    <div class="warning-box">
+                        <h4>启用 Opaque Texture</h4>
+                        <p>在 URP Asset 中启用 "Opaque Texture" 选项，否则 _CameraOpaqueTexture 不可用。</p>
+                        <p><strong>路径：</strong>URP Asset > Quality > Opaque Texture = On</p>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>🎮 应用场景</h2>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>🔮 玻璃/水晶</h3>
+                            <p>透明物体的折射效果</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🔥 热浪</h3>
+                            <p>火焰、沙漠的空气扭曲</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🌊 水下</h3>
+                            <p>水面折射、水下视角</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🛡️ 隐身效果</h3>
+                            <p>隐形斗篷的光学迷彩</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>💡 技巧</h2>
+                    
+                    <div class="tip-box">
+                        <h4>边缘处理</h4>
+                        <p>扭曲后的 UV 可能超出 [0,1] 范围，建议 clamp 或使用边缘渐变：</p>
+                        <pre class="shader-code">// 边缘衰减
+float edge = smoothstep(0, 0.1, screenUV.x) * smoothstep(1, 0.9, screenUV.x);
+edge *= smoothstep(0, 0.1, screenUV.y) * smoothstep(1, 0.9, screenUV.y);
+distortion *= edge;</pre>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

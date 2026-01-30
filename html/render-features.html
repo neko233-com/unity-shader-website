@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Render Features - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3">🔄 渲染管线</h3>
+                    <ul>
+                        <li><a href="urp-rendering-pipeline.html">URP 渲染流程</a></li>
+                        <li><a href="rendering-stages.html">渲染阶段</a></li>
+                        <li><a href="pass-types.html">Pass 类型</a></li>
+                        <li><a href="render-features.html" class="active">Render Features</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1>Render Features</h1>
+                <p class="subtitle">扩展 URP 渲染管线</p>
+
+                <div class="section">
+                    <h2">📚 什么是 Render Feature</h2>
+                    <p>Render Feature 是 URP 提供的扩展机制，允许在渲染管线中插入自定义渲染逻辑，实现特殊效果。</p>
+                    
+                    <div class="term-card">
+                        <h3>使用方式</h3>
+                        <div class="term-details">
+                            <ol>
+                                <li>创建 ScriptableRendererFeature 脚本</li>
+                                <li>创建 ScriptableRenderPass 脚本</li>
+                                <li>在 URP Asset 的 Renderer 中添加 Feature</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2">💻 创建自定义 Render Feature</h2>
+                    
+                    <h3>1. ScriptableRendererFeature</h3>
+                    <pre class="shader-code">using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
+
+public class MyRenderFeature : ScriptableRendererFeature
+{
+    [System.Serializable]
+    public class Settings
+    {
+        public RenderPassEvent renderPassEvent = RenderPassEvent.AfterRenderingOpaques;
+        public Material material;
+    }
+    
+    public Settings settings = new Settings();
+    private MyRenderPass renderPass;
+    
+    public override void Create()
+    {
+        renderPass = new MyRenderPass(settings);
+    }
+    
+    public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
+    {
+        if (settings.material == null) return;
+        renderer.EnqueuePass(renderPass);
+    }
+}</pre>
+
+                    <h3>2. ScriptableRenderPass</h3>
+                    <pre class="shader-code">public class MyRenderPass : ScriptableRenderPass
+{
+    private Material material;
+    private RTHandle tempRT;
+    
+    public MyRenderPass(MyRenderFeature.Settings settings)
+    {
+        this.material = settings.material;
+        this.renderPassEvent = settings.renderPassEvent;
+    }
+    
+    public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
+    {
+        var desc = renderingData.cameraData.cameraTargetDescriptor;
+        RenderingUtils.ReAllocateIfNeeded(ref tempRT, desc, name: "_TempRT");
+    }
+    
+    public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
+    {
+        CommandBuffer cmd = CommandBufferPool.Get("MyRenderPass");
+        
+        var source = renderingData.cameraData.renderer.cameraColorTargetHandle;
+        
+        // Blit 到临时 RT
+        Blit(cmd, source, tempRT, material, 0);
+        // Blit 回原始目标
+        Blit(cmd, tempRT, source);
+        
+        context.ExecuteCommandBuffer(cmd);
+        CommandBufferPool.Release(cmd);
+    }
+    
+    public override void OnCameraCleanup(CommandBuffer cmd)
+    {
+        // 清理
+    }
+}</pre>
+                </div>
+
+                <div class="section">
+                    <h2">🎯 注入时机 (RenderPassEvent)</h2>
+                    
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>事件</th>
+                                <th>说明</th>
+                                <th>常见用途</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>BeforeRendering</td>
+                                <td>渲染开始前</td>
+                                <td>初始化</td>
+                            </tr>
+                            <tr>
+                                <td>BeforeRenderingShadows</td>
+                                <td>阴影渲染前</td>
+                                <td>自定义阴影</td>
+                            </tr>
+                            <tr>
+                                <td>AfterRenderingSkybox</td>
+                                <td>天空盒后</td>
+                                <td>大气效果</td>
+                            </tr>
+                            <tr>
+                                <td>AfterRenderingOpaques</td>
+                                <td>不透明物体后</td>
+                                <td>描边、雾效</td>
+                            </tr>
+                            <tr>
+                                <td>AfterRenderingTransparents</td>
+                                <td>透明物体后</td>
+                                <td>后处理</td>
+                            </tr>
+                            <tr>
+                                <td>AfterRendering</td>
+                                <td>渲染结束后</td>
+                                <td>最终处理</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="section">
+                    <h2">🎮 常见应用</h2>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3">🖼️ 全屏后处理</h3>
+                            <p>自定义后处理效果</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3">✏️ 描边效果</h3>
+                            <p>基于深度/法线的描边</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3">🌊 平面反射</h3>
+                            <p>水面、镜面反射</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3">📺 特殊渲染</h3>
+                            <p>渲染特定层到RT</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2">⚠️ 注意事项</h2>
+                    
+                    <div class="warning-box">
+                        <h4">Unity 2022 LTS 变化</h4>
+                        <p>Unity 2022 开始使用 <code>RTHandle</code> 替代 <code>RenderTargetIdentifier</code>，确保使用新 API。</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

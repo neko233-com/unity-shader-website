@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数学基础 - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3>🧮 数学基础</h3>
+                    <ul>
+                        <li><a href="math-basics.html" class="active">数学基础</a></li>
+                        <li><a href="mvp-matrix.html">MVP 矩阵</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1>Shader 数学基础</h1>
+                <p class="subtitle">图形学中常用的数学概念和函数</p>
+
+                <div class="section">
+                    <h2">🔢 向量运算</h2>
+                    
+                    <h3>点积 (Dot Product)</h3>
+                    <div class="term-card">
+                        <div class="term-details">
+                            <p><strong>公式：</strong>A·B = |A| × |B| × cos(θ)</p>
+                            <p><strong>结果：</strong>标量（数字）</p>
+                            <p><strong>用途：</strong>测量两向量的相似度、投影</p>
+                            <pre class="shader-code">float d = dot(A, B);
+// d > 0: 夹角 < 90°（同向）
+// d = 0: 夹角 = 90°（垂直）
+// d < 0: 夹角 > 90°（反向）</pre>
+                        </div>
+                    </div>
+                    
+                    <h3>叉积 (Cross Product)</h3>
+                    <div class="term-card">
+                        <div class="term-details">
+                            <p><strong>公式：</strong>A×B = |A| × |B| × sin(θ) × n</p>
+                            <p><strong>结果：</strong>向量（垂直于 A 和 B）</p>
+                            <p><strong>用途：</strong>计算法线、副切线</p>
+                            <pre class="shader-code">float3 c = cross(A, B);
+// c 垂直于 A 和 B 组成的平面</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2">📐 常用数学函数</h2>
+                    
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>函数</th>
+                                <th>说明</th>
+                                <th>示例</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>saturate(x)</code></td>
+                                <td>限制到 [0, 1]</td>
+                                <td>颜色、百分比</td>
+                            </tr>
+                            <tr>
+                                <td><code>clamp(x, a, b)</code></td>
+                                <td>限制到 [a, b]</td>
+                                <td>任意范围限制</td>
+                            </tr>
+                            <tr>
+                                <td><code>lerp(a, b, t)</code></td>
+                                <td>线性插值</td>
+                                <td>颜色混合、过渡</td>
+                            </tr>
+                            <tr>
+                                <td><code>smoothstep(a, b, x)</code></td>
+                                <td>平滑过渡</td>
+                                <td>柔和边缘</td>
+                            </tr>
+                            <tr>
+                                <td><code>step(edge, x)</code></td>
+                                <td>阶跃函数</td>
+                                <td>硬边缘</td>
+                            </tr>
+                            <tr>
+                                <td><code>frac(x)</code></td>
+                                <td>取小数部分</td>
+                                <td>重复图案</td>
+                            </tr>
+                            <tr>
+                                <td><code>normalize(v)</code></td>
+                                <td>归一化</td>
+                                <td>方向向量</td>
+                            </tr>
+                            <tr>
+                                <td><code>reflect(I, N)</code></td>
+                                <td>反射向量</td>
+                                <td>镜面反射</td>
+                            </tr>
+                            <tr>
+                                <td><code>refract(I, N, eta)</code></td>
+                                <td>折射向量</td>
+                                <td>玻璃、水</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="section">
+                    <h2">💡 lerp vs smoothstep</h2>
+                    
+                    <div class="comparison-box">
+                        <div class="compare-item">
+                            <h4>lerp</h4>
+                            <pre class="shader-code">// 线性插值
+result = a + (b - a) * t;
+// t=0 → a
+// t=1 → b</pre>
+                            <p>线性变化，可能有硬边缘</p>
+                        </div>
+                        <div class="compare-item">
+                            <h4>smoothstep</h4>
+                            <pre class="shader-code">// 平滑插值
+t = t * t * (3 - 2 * t);
+result = lerp(a, b, t);</pre>
+                            <p>S 曲线变化，边缘柔和</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2">🔧 实用技巧</h2>
+                    
+                    <h3>重映射范围</h3>
+                    <pre class="shader-code">// 将 x 从 [inMin, inMax] 映射到 [outMin, outMax]
+float remap(float x, float inMin, float inMax, float outMin, float outMax)
+{
+    return outMin + (x - inMin) * (outMax - outMin) / (inMax - inMin);
+}
+
+// 示例: 将 [-1, 1] 映射到 [0, 1]
+float result = remap(x, -1, 1, 0, 1);
+// 简化: float result = x * 0.5 + 0.5;</pre>
+
+                    <h3>极坐标</h3>
+                    <pre class="shader-code">// UV 转极坐标
+float2 centered = uv - 0.5;
+float radius = length(centered);
+float angle = atan2(centered.y, centered.x);
+
+// 极坐标转 UV
+float2 uv = float2(cos(angle), sin(angle)) * radius + 0.5;</pre>
+                </div>
+
+                <div class="section">
+                    <h2">⚠️ 注意事项</h2>
+                    
+                    <div class="warning-box">
+                        <h4>除零错误</h4>
+                        <p>避免除以零，可以加一个小值：</p>
+                        <pre class="shader-code">float result = a / (b + 0.0001);</pre>
+                    </div>
+                    
+                    <div class="warning-box">
+                        <h4>NaN 和 Inf</h4>
+                        <p><code>pow()</code> 对负数可能产生 NaN：</p>
+                        <pre class="shader-code">float safe = pow(max(0, x), n);</pre>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

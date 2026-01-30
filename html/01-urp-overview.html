@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URP 概述 - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="搜索内容...">
+                    <button id="searchBtn">🔍</button>
+                </div>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3>🚀 入门指南</h3>
+                    <ul>
+                        <li><a href="00-introduction.html">教程介绍</a></li>
+                        <li><a href="01-urp-overview.html" class="active">URP 概述</a></li>
+                        <li><a href="02-shader-basics.html">Shader 基础</a></li>
+                        <li><a href="03-terminology.html">术语与黑话</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>🔄 渲染流程</h3>
+                    <ul>
+                        <li><a href="urp-rendering-pipeline.html">URP 渲染管线</a></li>
+                        <li><a href="rendering-stages.html">渲染阶段详解</a></li>
+                        <li><a href="pass-types.html">Pass 类型</a></li>
+                        <li><a href="render-features.html">Render Features</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>📐 坐标空间</h3>
+                    <ul>
+                        <li><a href="coordinate-spaces.html">坐标系概述</a></li>
+                        <li><a href="object-space.html">模型空间详解</a></li>
+                        <li><a href="world-space.html">世界空间详解</a></li>
+                        <li><a href="view-space.html">观察空间详解</a></li>
+                        <li><a href="clip-space.html">裁剪空间详解</a></li>
+                        <li><a href="screen-space.html">屏幕空间详解</a></li>
+                        <li><a href="tangent-space.html">切线空间详解</a></li>
+                        <li><a href="mvp-matrix.html">MVP 矩阵详解</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>💡 光照系统</h3>
+                    <ul>
+                        <li><a href="lighting-overview.html">光照概述</a></li>
+                        <li><a href="lambert.html">Lambert 漫反射</a></li>
+                        <li><a href="phong.html">Phong 高光</a></li>
+                        <li><a href="blinn-phong.html">Blinn-Phong</a></li>
+                        <li><a href="pbr-lighting.html">PBR 光照</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1>URP 概述</h1>
+                <p class="subtitle">理解 Unity Universal Render Pipeline 的核心概念</p>
+
+                <!-- 理论基础 -->
+                <div class="section">
+                    <h2>📚 理论基础</h2>
+                    
+                    <h3>什么是 URP？</h3>
+                    <p><strong>URP</strong> = <strong>U</strong>niversal <strong>R</strong>ender <strong>P</strong>ipeline（通用渲染管线）</p>
+                    
+                    <div class="visual-explanation">
+                        <h3>URP 架构图解</h3>
+                        <div class="diagram-container">
+                            <svg width="600" height="300" viewBox="0 0 600 300">
+                                <!-- 背景 -->
+                                <rect x="0" y="0" width="600" height="300" fill="#f8f9fa"/>
+                                
+                                <!-- 流程箭头 -->
+                                <defs>
+                                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                        <polygon points="0 0, 10 3.5, 0 7" fill="#4a90e2"/>
+                                    </marker>
+                                </defs>
+                                
+                                <!-- 3D 场景 -->
+                                <rect x="20" y="100" width="100" height="80" rx="8" fill="#667eea"/>
+                                <text x="70" y="145" text-anchor="middle" fill="white" font-size="14">3D 场景</text>
+                                
+                                <!-- 箭头1 -->
+                                <line x1="120" y1="140" x2="160" y2="140" stroke="#4a90e2" stroke-width="2" marker-end="url(#arrowhead)"/>
+                                
+                                <!-- URP 渲染管线 -->
+                                <rect x="170" y="60" width="260" height="160" rx="8" fill="#50c878" fill-opacity="0.2" stroke="#50c878" stroke-width="2"/>
+                                <text x="300" y="85" text-anchor="middle" fill="#2c3e50" font-size="14" font-weight="bold">URP 渲染管线</text>
+                                
+                                <!-- 内部步骤 -->
+                                <rect x="190" y="100" width="80" height="40" rx="4" fill="#4a90e2"/>
+                                <text x="230" y="125" text-anchor="middle" fill="white" font-size="11">顶点处理</text>
+                                
+                                <rect x="190" y="150" width="80" height="40" rx="4" fill="#4a90e2"/>
+                                <text x="230" y="175" text-anchor="middle" fill="white" font-size="11">光栅化</text>
+                                
+                                <rect x="290" y="100" width="80" height="40" rx="4" fill="#4a90e2"/>
+                                <text x="330" y="125" text-anchor="middle" fill="white" font-size="11">片元处理</text>
+                                
+                                <rect x="290" y="150" width="80" height="40" rx="4" fill="#4a90e2"/>
+                                <text x="330" y="175" text-anchor="middle" fill="white" font-size="11">后处理</text>
+                                
+                                <!-- 箭头2 -->
+                                <line x1="430" y1="140" x2="470" y2="140" stroke="#4a90e2" stroke-width="2" marker-end="url(#arrowhead)"/>
+                                
+                                <!-- 2D 图像 -->
+                                <rect x="480" y="100" width="100" height="80" rx="8" fill="#764ba2"/>
+                                <text x="530" y="145" text-anchor="middle" fill="white" font-size="14">2D 图像</text>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <h3>拆解理解</h3>
+                    <div class="steps">
+                        <div class="step">
+                            <span class="step-number">U</span>
+                            <strong>Universal（通用）</strong>
+                            <p>适用于多种平台（PC、手机、主机、VR）— 一套代码，到处运行</p>
+                        </div>
+                        
+                        <div class="step">
+                            <span class="step-number">R</span>
+                            <strong>Render（渲染）</strong>
+                            <p>把 3D 数据变成 2D 图像的过程 — 就像拍照：3D 的真实世界 → 2D 的照片</p>
+                        </div>
+                        
+                        <div class="step">
+                            <span class="step-number">P</span>
+                            <strong>Pipeline（管线）</strong>
+                            <p>一系列有序的处理步骤 — 就像工厂流水线：原材料 → 加工 → 成品</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- URP 的历史 -->
+                <div class="section">
+                    <h2>📖 URP 的历史演进</h2>
+                    
+                    <div class="visual-explanation">
+                        <h3>Unity 渲染管线演进</h3>
+                        <div class="diagram-container">
+                            <svg width="700" height="200" viewBox="0 0 700 200">
+                                <!-- 时间线 -->
+                                <line x1="50" y1="100" x2="650" y2="100" stroke="#ccc" stroke-width="2"/>
+                                
+                                <!-- Built-in -->
+                                <circle cx="100" cy="100" r="20" fill="#e74c3c"/>
+                                <text x="100" y="60" text-anchor="middle" font-size="12" fill="#333">Built-in</text>
+                                <text x="100" y="150" text-anchor="middle" font-size="10" fill="#666">Unity 1.0+</text>
+                                <text x="100" y="165" text-anchor="middle" font-size="10" fill="#999">已弃用</text>
+                                
+                                <!-- SRP -->
+                                <circle cx="250" cy="100" r="20" fill="#f39c12"/>
+                                <text x="250" y="60" text-anchor="middle" font-size="12" fill="#333">SRP 架构</text>
+                                <text x="250" y="150" text-anchor="middle" font-size="10" fill="#666">Unity 2018</text>
+                                
+                                <!-- LWRP -->
+                                <circle cx="400" cy="100" r="20" fill="#3498db"/>
+                                <text x="400" y="60" text-anchor="middle" font-size="12" fill="#333">LWRP</text>
+                                <text x="400" y="150" text-anchor="middle" font-size="10" fill="#666">Unity 2018</text>
+                                <text x="400" y="165" text-anchor="middle" font-size="10" fill="#999">已改名</text>
+                                
+                                <!-- URP -->
+                                <circle cx="550" cy="100" r="25" fill="#27ae60" stroke="#2ecc71" stroke-width="3"/>
+                                <text x="550" y="55" text-anchor="middle" font-size="14" font-weight="bold" fill="#333">URP</text>
+                                <text x="550" y="150" text-anchor="middle" font-size="10" fill="#666">Unity 2019+</text>
+                                <text x="550" y="165" text-anchor="middle" font-size="10" fill="#27ae60">推荐使用</text>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <div class="steps">
+                        <div class="step">
+                            <span class="step-number">1</span>
+                            <strong>Built-in Render Pipeline（内置渲染管线）</strong>
+                            <p>Unity 最早的渲染系统，功能全面但效率不高，Unity 2022 已标记为弃用</p>
+                        </div>
+                        
+                        <div class="step">
+                            <span class="step-number">2</span>
+                            <strong>SRP (Scriptable Render Pipeline)</strong>
+                            <p>Unity 2018 引入的可编程渲染管线架构，URP 和 HDRP 都基于此</p>
+                        </div>
+                        
+                        <div class="step">
+                            <span class="step-number">3</span>
+                            <strong>URP (Universal Render Pipeline)</strong>
+                            <p>以前叫 LWRP，2019 年改名。性能优秀，适合大多数项目，<strong>本教程的主角</strong></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 为什么选择 URP -->
+                <div class="section">
+                    <h2>✅ 为什么选择 URP？</h2>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>🚀 性能优秀</h3>
+                            <p>比内置管线快 2-3 倍，针对移动端优化</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>📱 跨平台</h3>
+                            <p>PC、手机、Switch、VR 都能用</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🎨 风格化渲染</h3>
+                            <p>适合卡通、二次元、像素风格</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🔮 官方推荐</h3>
+                            <p>Unity 官方推荐的未来主流方向</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- URP vs Built-in -->
+                <div class="section">
+                    <h2>🆚 URP vs Built-in 对比</h2>
+                    
+                    <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                        <thead>
+                            <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                                <th style="padding: 15px; text-align: left;">特性</th>
+                                <th style="padding: 15px; text-align: left;">Built-in</th>
+                                <th style="padding: 15px; text-align: left;">URP</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="background: #f8f9fa;">
+                                <td style="padding: 12px; border-bottom: 1px solid #ddd;">性能</td>
+                                <td style="padding: 12px; border-bottom: 1px solid #ddd;">⭐⭐</td>
+                                <td style="padding: 12px; border-bottom: 1px solid #ddd;">⭐⭐⭐⭐⭐</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px; border-bottom: 1px solid #ddd;">跨平台</td>
+                                <td style="padding: 12px; border-bottom: 1px solid #ddd;">⭐⭐⭐</td>
+                                <td style="padding: 12px; border-bottom: 1px solid #ddd;">⭐⭐⭐⭐⭐</td>
+                            </tr>
+                            <tr style="background: #f8f9fa;">
+                                <td style="padding: 12px; border-bottom: 1px solid #ddd;">可定制性</td>
+                                <td style="padding: 12px; border-bottom: 1px solid #ddd;">⭐⭐</td>
+                                <td style="padding: 12px; border-bottom: 1px solid #ddd;">⭐⭐⭐⭐⭐</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px; border-bottom: 1px solid #ddd;">维护状态</td>
+                                <td style="padding: 12px; border-bottom: 1px solid #ddd;">❌ 已弃用</td>
+                                <td style="padding: 12px; border-bottom: 1px solid #ddd;">✅ 积极维护</td>
+                            </tr>
+                            <tr style="background: #f8f9fa;">
+                                <td style="padding: 12px;">Shader 语法</td>
+                                <td style="padding: 12px;">旧语法 (CG)</td>
+                                <td style="padding: 12px;">现代 HLSL</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 术语卡片 -->
+                <div class="section">
+                    <h2>📖 历史背景与术语</h2>
+                    
+                    <div class="term-card">
+                        <h3>LWRP → URP 改名原因</h3>
+                        <div class="term-details">
+                            <p><strong>历史：</strong>URP 最初叫 LWRP（Lightweight Render Pipeline）</p>
+                            <p><strong>问题：</strong>"Lightweight" 让人误解为功能简单</p>
+                            <p><strong>实际：</strong>URP 功能强大，只是性能优化更好</p>
+                            <p><strong>改名：</strong>2019 年改名为 URP，强调"通用"特性</p>
+                        </div>
+                    </div>
+
+                    <div class="term-card">
+                        <h3>SRP Batcher</h3>
+                        <div class="term-details">
+                            <p><strong>含义：</strong>一种批处理优化技术</p>
+                            <p><strong>作用：</strong>减少 Draw Call，提升渲染性能</p>
+                            <p><strong>原理：</strong>使用相同 Shader 的物体可以合批渲染</p>
+                            <p><strong>要求：</strong>Shader 需要兼容 SRP Batcher</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

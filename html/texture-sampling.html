@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>纹理采样 - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="搜索内容...">
+                    <button id="searchBtn">🔍</button>
+                </div>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3>🚀 入门指南</h3>
+                    <ul>
+                        <li><a href="00-introduction.html">教程介绍</a></li>
+                        <li><a href="01-urp-overview.html">URP 概述</a></li>
+                        <li><a href="02-shader-basics.html">Shader 基础</a></li>
+                        <li><a href="03-terminology.html">术语与黑话</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>🔄 渲染流程</h3>
+                    <ul>
+                        <li><a href="urp-rendering-pipeline.html">URP 渲染管线</a></li>
+                        <li><a href="rendering-stages.html">渲染阶段详解</a></li>
+                        <li><a href="pass-types.html">Pass 类型</a></li>
+                        <li><a href="render-features.html">Render Features</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>📐 坐标空间</h3>
+                    <ul>
+                        <li><a href="coordinate-spaces.html">坐标系概述</a></li>
+                        <li><a href="object-space.html">模型空间详解</a></li>
+                        <li><a href="world-space.html">世界空间详解</a></li>
+                        <li><a href="view-space.html">观察空间详解</a></li>
+                        <li><a href="clip-space.html">裁剪空间详解</a></li>
+                        <li><a href="screen-space.html">屏幕空间详解</a></li>
+                        <li><a href="tangent-space.html">切线空间详解</a></li>
+                        <li><a href="mvp-matrix.html">MVP 矩阵详解</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>🎨 UV 变换</h3>
+                    <ul>
+                        <li><a href="rotate-uv.html">RotateUV - 旋转矩阵</a></li>
+                        <li><a href="uv-scroll.html">UV 滚动</a></li>
+                        <li><a href="uv-scale.html">UV 缩放</a></li>
+                        <li><a href="uv-offset.html">UV 偏移</a></li>
+                        <li><a href="uv-animation.html">UV 动画</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>🖼️ 纹理操作</h3>
+                    <ul>
+                        <li><a href="texture-sampling.html" class="active">纹理采样</a></li>
+                        <li><a href="texture-addressing.html">纹理寻址模式</a></li>
+                        <li><a href="texture-blend.html">纹理混合</a></li>
+                        <li><a href="mipmap.html">Mipmap 详解</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>💡 光照系统</h3>
+                    <ul>
+                        <li><a href="lighting-overview.html">光照概述</a></li>
+                        <li><a href="lambert.html">Lambert 漫反射</a></li>
+                        <li><a href="phong.html">Phong 高光</a></li>
+                        <li><a href="blinn-phong.html">Blinn-Phong</a></li>
+                        <li><a href="pbr-lighting.html">PBR 光照</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>✨ 特效函数</h3>
+                    <ul>
+                        <li><a href="dissolve.html">溶解效果</a></li>
+                        <li><a href="distortion.html">扭曲效果</a></li>
+                        <li><a href="fresnel.html">菲涅尔效果</a></li>
+                        <li><a href="rim-light.html">边缘光</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>🔧 高级主题</h3>
+                    <ul>
+                        <li><a href="shader-variants.html">Shader Variants</a></li>
+                        <li><a href="compute-shader.html">Compute Shader</a></li>
+                        <li><a href="custom-render-pass.html">自定义 Render Pass</a></li>
+                        <li><a href="performance-optimization.html">性能优化</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1>纹理采样</h1>
+                <p class="subtitle">从纹理中读取颜色 - Shader 中最常用的操作</p>
+
+                <!-- 什么是纹理采样 -->
+                <div class="section">
+                    <h2>📚 什么是纹理采样？</h2>
+                    
+                    <div class="term-card">
+                        <h3>纹理采样 = 从图片中"取色"</h3>
+                        <div class="term-details">
+                            <p><strong>定义：</strong>根据 UV 坐标，从纹理（贴图）中读取对应位置的颜色值</p>
+                            <p><strong>类比：</strong>就像用滴管工具从图片上吸取颜色</p>
+                            <p><strong>关键元素：</strong></p>
+                            <ul>
+                                <li><strong>纹理（Texture）：</strong>存储颜色数据的图片</li>
+                                <li><strong>UV 坐标：</strong>告诉采样器"从哪里取色"（范围 0~1）</li>
+                                <li><strong>采样器（Sampler）：</strong>定义"怎么取色"（过滤方式、重复模式等）</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="visual-explanation">
+                        <h3>纹理采样过程图解</h3>
+                        <div class="diagram-container">
+                            <svg width="700" height="300" viewBox="0 0 700 300">
+                                <defs>
+                                    <marker id="arr-blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                        <polygon points="0 0, 10 3.5, 0 7" fill="#3498db"/>
+                                    </marker>
+                                    <!-- 棋盘格纹理 -->
+                                    <pattern id="checkerboard" width="40" height="40" patternUnits="userSpaceOnUse">
+                                        <rect width="20" height="20" fill="#e74c3c"/>
+                                        <rect x="20" width="20" height="20" fill="#f1c40f"/>
+                                        <rect y="20" width="20" height="20" fill="#27ae60"/>
+                                        <rect x="20" y="20" width="20" height="20" fill="#3498db"/>
+                                    </pattern>
+                                </defs>
+
+                                <!-- 标题 -->
+                                <text x="350" y="25" text-anchor="middle" fill="#2c3e50" font-size="16" font-weight="bold">
+                                    SAMPLE_TEXTURE2D 采样过程
+                                </text>
+
+                                <!-- 纹理图片 -->
+                                <g transform="translate(80, 120)">
+                                    <rect x="-60" y="-60" width="120" height="120" fill="url(#checkerboard)" stroke="#333" stroke-width="2"/>
+                                    
+                                    <!-- UV 坐标标注 -->
+                                    <text x="-60" y="-70" fill="#666" font-size="10">(0,1)</text>
+                                    <text x="55" y="-70" fill="#666" font-size="10">(1,1)</text>
+                                    <text x="-60" y="75" fill="#666" font-size="10">(0,0)</text>
+                                    <text x="55" y="75" fill="#666" font-size="10">(1,0)</text>
+                                    
+                                    <!-- 采样点 -->
+                                    <circle cx="30" cy="-30" r="8" fill="white" stroke="#e74c3c" stroke-width="3"/>
+                                    <text x="45" y="-25" fill="#e74c3c" font-size="11" font-weight="bold">UV (0.75, 0.75)</text>
+                                    
+                                    <!-- 标签 -->
+                                    <text x="0" y="95" text-anchor="middle" fill="#333" font-size="13" font-weight="bold">纹理 (Texture)</text>
+                                </g>
+
+                                <!-- 箭头 -->
+                                <line x1="160" y1="120" x2="240" y2="120" stroke="#3498db" stroke-width="3" marker-end="url(#arr-blue)"/>
+                                <text x="200" y="105" text-anchor="middle" fill="#3498db" font-size="11">采样</text>
+
+                                <!-- 采样器 -->
+                                <g transform="translate(310, 120)">
+                                    <rect x="-55" y="-50" width="110" height="100" rx="10" fill="#9b59b6"/>
+                                    <text x="0" y="-20" text-anchor="middle" fill="white" font-size="12" font-weight="bold">Sampler</text>
+                                    <text x="0" y="0" text-anchor="middle" fill="#e8daef" font-size="10">采样器</text>
+                                    <text x="0" y="25" text-anchor="middle" fill="white" font-size="9">Filter: Bilinear</text>
+                                    <text x="0" y="40" text-anchor="middle" fill="white" font-size="9">Wrap: Repeat</text>
+                                </g>
+
+                                <!-- 箭头 -->
+                                <line x1="370" y1="120" x2="450" y2="120" stroke="#3498db" stroke-width="3" marker-end="url(#arr-blue)"/>
+                                <text x="410" y="105" text-anchor="middle" fill="#3498db" font-size="11">输出</text>
+
+                                <!-- 输出颜色 -->
+                                <g transform="translate(530, 120)">
+                                    <rect x="-60" y="-50" width="120" height="100" rx="10" fill="#e74c3c"/>
+                                    <text x="0" y="-15" text-anchor="middle" fill="white" font-size="12" font-weight="bold">输出颜色</text>
+                                    <text x="0" y="10" text-anchor="middle" fill="white" font-size="11">half4</text>
+                                    <text x="0" y="35" text-anchor="middle" fill="#f5b7b1" font-size="10">(R, G, B, A)</text>
+                                </g>
+
+                                <!-- 代码示例 -->
+                                <rect x="100" y="230" width="500" height="50" rx="5" fill="#2d2d2d"/>
+                                <text x="350" y="260" text-anchor="middle" fill="#9cdcfe" font-size="12" font-family="monospace">
+                                    half4 color = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv);
+                                </text>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- UV 坐标 -->
+                <div class="section">
+                    <h2>📍 UV 坐标</h2>
+
+                    <div class="term-card">
+                        <h3>什么是 UV？</h3>
+                        <div class="term-details">
+                            <p><strong>U 和 V：</strong>纹理坐标系的两个轴（类似 X 和 Y）</p>
+                            <p><strong>为什么叫 UV？</strong>因为 XYZ 已经被 3D 空间坐标用了，所以纹理坐标用 U 和 V</p>
+                            <p><strong>范围：</strong>通常是 0 到 1</p>
+                            <ul>
+                                <li><code>(0, 0)</code> = 纹理左下角</li>
+                                <li><code>(1, 1)</code> = 纹理右上角</li>
+                                <li><code>(0.5, 0.5)</code> = 纹理中心</li>
+                            </ul>
+                            <p><strong>超出范围？</strong>由采样器的 Wrap Mode 决定（Repeat、Clamp、Mirror 等）</p>
+                        </div>
+                    </div>
+
+                    <div class="visual-explanation">
+                        <h3>UV 坐标系</h3>
+                        <div class="diagram-container">
+                            <svg width="400" height="280" viewBox="0 0 400 280">
+                                <!-- 纹理框 -->
+                                <rect x="50" y="30" width="200" height="200" fill="#ecf0f1" stroke="#333" stroke-width="2"/>
+                                
+                                <!-- 网格线 -->
+                                <line x1="150" y1="30" x2="150" y2="230" stroke="#bdc3c7" stroke-width="1" stroke-dasharray="5"/>
+                                <line x1="50" y1="130" x2="250" y2="130" stroke="#bdc3c7" stroke-width="1" stroke-dasharray="5"/>
+                                
+                                <!-- 坐标轴 -->
+                                <line x1="50" y1="230" x2="270" y2="230" stroke="#e74c3c" stroke-width="3"/>
+                                <polygon points="270,230 260,225 260,235" fill="#e74c3c"/>
+                                <text x="280" y="235" fill="#e74c3c" font-size="14" font-weight="bold">U</text>
+                                
+                                <line x1="50" y1="230" x2="50" y2="10" stroke="#27ae60" stroke-width="3"/>
+                                <polygon points="50,10 45,20 55,20" fill="#27ae60"/>
+                                <text x="45" y="5" fill="#27ae60" font-size="14" font-weight="bold">V</text>
+                                
+                                <!-- 坐标标注 -->
+                                <text x="45" y="245" fill="#333" font-size="11">(0,0)</text>
+                                <text x="245" y="245" fill="#333" font-size="11">(1,0)</text>
+                                <text x="25" y="35" fill="#333" font-size="11">(0,1)</text>
+                                <text x="245" y="35" fill="#333" font-size="11">(1,1)</text>
+                                <text x="145" y="140" fill="#333" font-size="11">(0.5,0.5)</text>
+                                
+                                <!-- 示例采样点 -->
+                                <circle cx="150" cy="130" r="6" fill="#9b59b6"/>
+                                
+                                <!-- 说明 -->
+                                <text x="300" y="80" fill="#333" font-size="12" font-weight="bold">Unity UV 系统：</text>
+                                <text x="300" y="105" fill="#666" font-size="11">• (0,0) 在左下角</text>
+                                <text x="300" y="125" fill="#666" font-size="11">• U 向右增加</text>
+                                <text x="300" y="145" fill="#666" font-size="11">• V 向上增加</text>
+                                <text x="300" y="175" fill="#e74c3c" font-size="10">注意：DirectX 的 V</text>
+                                <text x="300" y="190" fill="#e74c3c" font-size="10">是向下的，Unity</text>
+                                <text x="300" y="205" fill="#e74c3c" font-size="10">已帮你处理好了</text>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- URP 纹理采样语法 -->
+                <div class="section">
+                    <h2>💻 URP 纹理采样语法</h2>
+
+                    <h3>声明纹理和采样器</h3>
+                    <pre class="shader-code">// 1. 在 Properties 中声明（Inspector 可见）
+Properties
+{
+    _MainTex ("Main Texture", 2D) = "white" {}
+    _NormalMap ("Normal Map", 2D) = "bump" {}
+}
+
+// 2. 在 HLSL 中声明纹理和采样器
+TEXTURE2D(_MainTex);              // 纹理对象
+SAMPLER(sampler_MainTex);         // 采样器（自动绑定纹理设置）
+
+TEXTURE2D(_NormalMap);
+SAMPLER(sampler_NormalMap);
+
+// 3. 在 CBUFFER 中声明 _ST 变量（用于 Tiling/Offset）
+CBUFFER_START(UnityPerMaterial)
+    float4 _MainTex_ST;           // xy = Tiling, zw = Offset
+    float4 _NormalMap_ST;
+CBUFFER_END</pre>
+
+                    <div class="term-card">
+                        <h3>_ST 是什么？</h3>
+                        <div class="term-details">
+                            <p><strong>S = Scale（缩放）：</strong>对应 Inspector 中的 Tiling</p>
+                            <p><strong>T = Translation（平移）：</strong>对应 Inspector 中的 Offset</p>
+                            <p><strong>_MainTex_ST 的组成：</strong></p>
+                            <ul>
+                                <li><code>.x</code> = Tiling X（U 方向缩放）</li>
+                                <li><code>.y</code> = Tiling Y（V 方向缩放）</li>
+                                <li><code>.z</code> = Offset X（U 方向偏移）</li>
+                                <li><code>.w</code> = Offset Y（V 方向偏移）</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <h3>采样纹理</h3>
+                    <pre class="shader-code">// 在顶点着色器中：应用 Tiling 和 Offset
+Varyings vert(Attributes input)
+{
+    Varyings output;
+    // ...
+    
+    // TRANSFORM_TEX 宏会自动应用 _MainTex_ST
+    output.uv = TRANSFORM_TEX(input.uv, _MainTex);
+    
+    // 等价于：
+    // output.uv = input.uv * _MainTex_ST.xy + _MainTex_ST.zw;
+    
+    return output;
+}
+
+// 在片元着色器中：采样纹理
+half4 frag(Varyings input) : SV_Target
+{
+    // SAMPLE_TEXTURE2D 是 URP 标准采样宏
+    half4 mainTex = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv);
+    
+    return mainTex;
+}</pre>
+                </div>
+
+                <!-- SAMPLE_TEXTURE2D 详解 -->
+                <div class="section">
+                    <h2>🔬 SAMPLE_TEXTURE2D 详解</h2>
+
+                    <div class="term-card">
+                        <h3>宏的三个参数</h3>
+                        <div class="term-details">
+                            <pre class="shader-code">half4 color = SAMPLE_TEXTURE2D(textureName, samplerName, uv);
+                                          ↓              ↓         ↓
+                                        纹理对象      采样器      UV坐标</pre>
+                            <p><strong>textureName：</strong>TEXTURE2D() 声明的纹理</p>
+                            <p><strong>samplerName：</strong>SAMPLER() 声明的采样器</p>
+                            <p><strong>uv：</strong>float2 类型的纹理坐标</p>
+                        </div>
+                    </div>
+
+                    <div class="term-card">
+                        <h3>为什么纹理和采样器要分开？</h3>
+                        <div class="term-details">
+                            <p><strong>历史原因：</strong></p>
+                            <ul>
+                                <li><strong>旧写法（DX9）：</strong><code>sampler2D _MainTex;</code> 纹理和采样器绑定在一起</li>
+                                <li><strong>新写法（DX11+）：</strong>纹理和采样器分离，更灵活</li>
+                            </ul>
+                            <p><strong>好处：</strong></p>
+                            <ul>
+                                <li>多个纹理可以<strong>共享一个采样器</strong>，节省硬件资源</li>
+                                <li>可以为同一纹理使用<strong>不同的采样设置</strong></li>
+                                <li>符合现代 GPU 架构，性能更好</li>
+                            </ul>
+                            <pre class="shader-code">// 共享采样器示例：两个纹理使用同一个采样器
+TEXTURE2D(_MainTex);
+TEXTURE2D(_DetailTex);
+SAMPLER(sampler_MainTex);  // 只声明一个采样器
+
+half4 mainColor = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv);
+half4 detailColor = SAMPLE_TEXTURE2D(_DetailTex, sampler_MainTex, uv);
+// DetailTex 会使用 MainTex 在 Inspector 中设置的过滤模式</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 采样器状态 -->
+                <div class="section">
+                    <h2>⚙️ 采样器状态</h2>
+
+                    <h3>过滤模式（Filter Mode）</h3>
+                    <div class="visual-explanation">
+                        <div class="diagram-container">
+                            <svg width="650" height="200" viewBox="0 0 650 200">
+                                <!-- Point 采样 -->
+                                <g transform="translate(110, 100)">
+                                    <rect x="-80" y="-60" width="160" height="100" rx="5" fill="#ecf0f1" stroke="#333" stroke-width="1"/>
+                                    
+                                    <!-- 像素化效果 -->
+                                    <rect x="-60" y="-40" width="30" height="30" fill="#e74c3c"/>
+                                    <rect x="-30" y="-40" width="30" height="30" fill="#f39c12"/>
+                                    <rect x="0" y="-40" width="30" height="30" fill="#27ae60"/>
+                                    <rect x="30" y="-40" width="30" height="30" fill="#3498db"/>
+                                    <rect x="-60" y="-10" width="30" height="30" fill="#9b59b6"/>
+                                    <rect x="-30" y="-10" width="30" height="30" fill="#1abc9c"/>
+                                    <rect x="0" y="-10" width="30" height="30" fill="#e91e63"/>
+                                    <rect x="30" y="-10" width="30" height="30" fill="#ff9800"/>
+                                    
+                                    <text x="0" y="60" text-anchor="middle" fill="#333" font-size="13" font-weight="bold">Point（点采样）</text>
+                                    <text x="0" y="78" text-anchor="middle" fill="#666" font-size="10">锐利、有锯齿</text>
+                                </g>
+
+                                <!-- Bilinear 采样 -->
+                                <g transform="translate(325, 100)">
+                                    <rect x="-80" y="-60" width="160" height="100" rx="5" fill="#ecf0f1" stroke="#333" stroke-width="1"/>
+                                    
+                                    <!-- 模糊效果 -->
+                                    <defs>
+                                        <linearGradient id="bilinearGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" style="stop-color:#e74c3c"/>
+                                            <stop offset="25%" style="stop-color:#f39c12"/>
+                                            <stop offset="50%" style="stop-color:#27ae60"/>
+                                            <stop offset="75%" style="stop-color:#3498db"/>
+                                            <stop offset="100%" style="stop-color:#9b59b6"/>
+                                        </linearGradient>
+                                    </defs>
+                                    <rect x="-60" y="-40" width="120" height="60" fill="url(#bilinearGrad)" rx="5"/>
+                                    
+                                    <text x="0" y="60" text-anchor="middle" fill="#333" font-size="13" font-weight="bold">Bilinear（双线性）</text>
+                                    <text x="0" y="78" text-anchor="middle" fill="#666" font-size="10">平滑、常用</text>
+                                </g>
+
+                                <!-- Trilinear 采样 -->
+                                <g transform="translate(540, 100)">
+                                    <rect x="-80" y="-60" width="160" height="100" rx="5" fill="#ecf0f1" stroke="#333" stroke-width="1"/>
+                                    
+                                    <!-- 多级模糊示意 -->
+                                    <rect x="-60" y="-40" width="40" height="40" fill="#9b59b6" opacity="0.8" rx="3"/>
+                                    <rect x="-40" y="-30" width="40" height="40" fill="#9b59b6" opacity="0.6" rx="3"/>
+                                    <rect x="-20" y="-20" width="40" height="40" fill="#9b59b6" opacity="0.4" rx="3"/>
+                                    <rect x="0" y="-10" width="40" height="40" fill="#9b59b6" opacity="0.2" rx="3"/>
+                                    
+                                    <text x="0" y="60" text-anchor="middle" fill="#333" font-size="13" font-weight="bold">Trilinear（三线性）</text>
+                                    <text x="0" y="78" text-anchor="middle" fill="#666" font-size="10">平滑 + Mipmap 混合</text>
+                                </g>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <h3>寻址模式（Wrap Mode）</h3>
+                    <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                        <thead>
+                            <tr style="background: #f8f9fa;">
+                                <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">模式</th>
+                                <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">UV 超出 [0,1] 时的行为</th>
+                                <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">用途</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid #ddd;"><code>Repeat</code></td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">重复平铺（2.3 → 0.3）</td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">地面、墙壁等可以平铺的纹理</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid #ddd;"><code>Clamp</code></td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">钳制到边缘颜色（2.3 → 1.0）</td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">贴花、UI、不想重复的纹理</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid #ddd;"><code>Mirror</code></td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">镜像翻转</td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">对称图案、特殊效果</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 内置采样器 -->
+                <div class="section">
+                    <h2>🎛️ 使用内置采样器</h2>
+
+                    <p>URP 提供了一些预定义的采样器，可以不用自己声明：</p>
+
+                    <pre class="shader-code">// URP 内置采样器（在 Core.hlsl 中定义）
+sampler_LinearClamp      // 双线性 + 钳制
+sampler_LinearRepeat     // 双线性 + 重复
+sampler_PointClamp       // 点采样 + 钳制
+sampler_PointRepeat      // 点采样 + 重复
+
+// 使用示例
+TEXTURE2D(_MainTex);
+// 不需要 SAMPLER(sampler_MainTex);
+
+half4 color = SAMPLE_TEXTURE2D(_MainTex, sampler_LinearClamp, uv);</pre>
+
+                    <div class="term-card">
+                        <h3>什么时候用内置采样器？</h3>
+                        <div class="term-details">
+                            <ul>
+                                <li><strong>需要特定采样行为时</strong>（不依赖纹理 Import Settings）</li>
+                                <li><strong>多个纹理需要相同采样设置时</strong>（减少采样器数量）</li>
+                                <li><strong>程序化生成纹理时</strong>（如 Render Texture）</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 完整代码示例 -->
+                <div class="section">
+                    <h2>📝 完整代码示例</h2>
+
+                    <pre class="shader-code">Shader "Custom/TextureSampling"
+{
+    Properties
+    {
+        _MainTex ("Main Texture", 2D) = "white" {}
+        _TintColor ("Tint Color", Color) = (1,1,1,1)
+    }
+    
+    SubShader
+    {
+        Tags { "RenderType"="Opaque" "RenderPipeline"="UniversalPipeline" }
+        
+        Pass
+        {
+            HLSLPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float2 uv : TEXCOORD0;
+            };
+            
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float2 uv : TEXCOORD0;
+            };
+            
+            // 声明纹理和采样器
+            TEXTURE2D(_MainTex);
+            SAMPLER(sampler_MainTex);
+            
+            // CBUFFER 中的属性
+            CBUFFER_START(UnityPerMaterial)
+                float4 _MainTex_ST;
+                half4 _TintColor;
+            CBUFFER_END
+            
+            Varyings vert(Attributes input)
+            {
+                Varyings output;
+                output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
+                
+                // 应用 Tiling 和 Offset
+                output.uv = TRANSFORM_TEX(input.uv, _MainTex);
+                
+                return output;
+            }
+            
+            half4 frag(Varyings input) : SV_Target
+            {
+                // 采样主纹理
+                half4 texColor = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv);
+                
+                // 应用染色
+                half4 finalColor = texColor * _TintColor;
+                
+                return finalColor;
+            }
+            ENDHLSL
+        }
+    }
+}</pre>
+                </div>
+
+                <!-- 常见问题 -->
+                <div class="section">
+                    <h2>❓ 常见问题</h2>
+
+                    <div class="term-card">
+                        <h3>Q: tex2D 和 SAMPLE_TEXTURE2D 有什么区别？</h3>
+                        <div class="term-details">
+                            <p><strong>tex2D：</strong>旧写法（Unity Built-in RP），纹理和采样器绑定</p>
+                            <p><strong>SAMPLE_TEXTURE2D：</strong>新写法（URP/HDRP），纹理和采样器分离</p>
+                            <pre class="shader-code">// 旧写法 - 不推荐在 URP 中使用
+sampler2D _MainTex;
+half4 color = tex2D(_MainTex, uv);
+
+// 新写法 - URP 标准
+TEXTURE2D(_MainTex);
+SAMPLER(sampler_MainTex);
+half4 color = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv);</pre>
+                        </div>
+                    </div>
+
+                    <div class="term-card">
+                        <h3>Q: 为什么我的纹理显示是粉色/紫色？</h3>
+                        <div class="term-details">
+                            <p><strong>粉色 = Shader 编译错误</strong></p>
+                            <ul>
+                                <li>检查 Shader 代码是否有语法错误</li>
+                                <li>查看 Console 窗口的错误信息</li>
+                            </ul>
+                            <p><strong>紫色 = 纹理丢失或未赋值</strong></p>
+                            <ul>
+                                <li>检查材质上是否设置了纹理</li>
+                                <li>检查纹理变量名是否拼写正确</li>
+                                <li>检查 TEXTURE2D 和 SAMPLER 声明是否正确</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="term-card">
+                        <h3>Q: Tiling 和 Offset 没有效果？</h3>
+                        <div class="term-details">
+                            <p>确保你做了以下两件事：</p>
+                            <ol>
+                                <li><strong>在 CBUFFER 中声明了 _MainTex_ST</strong></li>
+                                <li><strong>在顶点着色器中使用了 TRANSFORM_TEX 宏</strong></li>
+                            </ol>
+                            <pre class="shader-code">// 必须声明
+CBUFFER_START(UnityPerMaterial)
+    float4 _MainTex_ST;  // 这个变量名必须是 纹理名_ST
+CBUFFER_END
+
+// 必须使用
+output.uv = TRANSFORM_TEX(input.uv, _MainTex);</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 导航按钮 -->
+                <div class="buttons">
+                    <a href="uv-animation.html" class="button">上一页：UV 动画</a>
+                    <a href="texture-addressing.html" class="button">下一页：纹理寻址模式</a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>屏幕空间 - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3>📐 坐标空间</h3>
+                    <ul>
+                        <li><a href="coordinate-spaces.html">坐标空间概述</a></li>
+                        <li><a href="object-space.html">物体空间</a></li>
+                        <li><a href="world-space.html">世界空间</a></li>
+                        <li><a href="view-space.html">观察空间</a></li>
+                        <li><a href="clip-space.html">裁剪空间</a></li>
+                        <li><a href="screen-space.html" class="active">屏幕空间</a></li>
+                        <li><a href="tangent-space.html">切线空间</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1>屏幕空间 (Screen Space)</h1>
+                <p class="subtitle">最终渲染到屏幕的 2D 坐标</p>
+
+                <div class="section">
+                    <h2>📚 定义</h2>
+                    <p>屏幕空间是 2D 坐标系统，表示像素在屏幕上的位置。原点通常在左下角（OpenGL）或左上角（DirectX）。</p>
+                    
+                    <div class="diagram-container">
+                        <svg viewBox="0 0 300 220" class="screen-diagram">
+                            <!-- 屏幕边框 -->
+                            <rect x="50" y="30" width="200" height="150" fill="#1a1a2e" stroke="#4a9eff" stroke-width="2"/>
+                            
+                            <!-- 坐标轴 -->
+                            <line x1="50" y1="180" x2="50" y2="30" stroke="#00ff88" stroke-width="2" marker-end="url(#scrArrowG)"/>
+                            <line x1="50" y1="180" x2="250" y2="180" stroke="#ff4444" stroke-width="2" marker-end="url(#scrArrowR)"/>
+                            
+                            <!-- 标签 -->
+                            <text x="30" y="30" fill="#00ff88" font-size="11">Y</text>
+                            <text x="255" y="185" fill="#ff4444" font-size="11">X</text>
+                            
+                            <!-- 坐标点 -->
+                            <circle cx="50" cy="180" r="4" fill="#fff"/>
+                            <text x="20" y="200" fill="#ccc" font-size="10">(0,0)</text>
+                            
+                            <circle cx="250" cy="30" r="4" fill="#fff"/>
+                            <text x="220" y="25" fill="#ccc" font-size="10">(W,H)</text>
+                            
+                            <!-- 像素示意 -->
+                            <rect x="120" y="100" width="10" height="10" fill="#ff8844"/>
+                            <text x="135" y="110" fill="#ff8844" font-size="9">(x,y)</text>
+                            
+                            <defs>
+                                <marker id="scrArrowG" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                    <polygon points="0 0, 10 3.5, 0 7" fill="#00ff88"/>
+                                </marker>
+                                <marker id="scrArrowR" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                    <polygon points="0 0, 10 3.5, 0 7" fill="#ff4444"/>
+                                </marker>
+                            </defs>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>💻 在 Shader 中使用</h2>
+                    
+                    <h3>获取屏幕坐标</h3>
+                    <pre class="shader-code">// 方法1: 使用 ComputeScreenPos（顶点着色器）
+Varyings vert(Attributes input)
+{
+    Varyings output;
+    output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
+    output.screenPos = ComputeScreenPos(output.positionCS);
+    return output;
+}
+
+// 片段着色器中透视除法
+half4 frag(Varyings input) : SV_Target
+{
+    float2 screenUV = input.screenPos.xy / input.screenPos.w;
+    // screenUV 范围: [0, 1]
+}
+
+// 方法2: 直接使用 positionCS（片段着色器）
+half4 frag(Varyings input) : SV_Target
+{
+    // positionCS.xy 是像素坐标
+    float2 pixelPos = input.positionCS.xy;
+    
+    // 转换为UV (需要屏幕尺寸)
+    float2 screenUV = pixelPos / _ScreenParams.xy;
+}</pre>
+
+                    <h3>常用内置变量</h3>
+                    <pre class="shader-code">// _ScreenParams
+// x = 屏幕宽度（像素）
+// y = 屏幕高度（像素）
+// z = 1 + 1/宽度
+// w = 1 + 1/高度
+
+float2 screenSize = _ScreenParams.xy;
+float aspectRatio = _ScreenParams.x / _ScreenParams.y;</pre>
+                </div>
+
+                <div class="section">
+                    <h2>🎮 应用场景</h2>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>🖼️ 后处理</h3>
+                            <p>全屏效果基于屏幕UV</p>
+                            <pre class="shader-code">half4 color = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, screenUV);</pre>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3">🌊 扭曲效果</h3>
+                            <p>采样 OpaqueTexture</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3">📺 扫描线</h3>
+                            <p>CRT 显示器效果</p>
+                            <pre class="shader-code">float scanline = sin(screenUV.y * 800) * 0.1;</pre>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3">🎯 屏幕空间反射</h3>
+                            <p>SSR 在屏幕空间追踪</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2">⚠️ 平台差异</h2>
+                    
+                    <div class="warning-box">
+                        <h4>Y 轴翻转</h4>
+                        <p>不同平台 Y 轴方向可能不同。使用 <code>_ProjectionParams.x</code> 判断：</p>
+                        <pre class="shader-code">// _ProjectionParams.x: 1 正常，-1 翻转
+#if UNITY_UV_STARTS_AT_TOP
+    if (_ProjectionParams.x < 0)
+        screenUV.y = 1 - screenUV.y;
+#endif</pre>
+                    </div>
+                </div>
+
+                <div class="nav-links">
+                    <a href="clip-space.html">← 裁剪空间</a>
+                    <a href="tangent-space.html">切线空间 →</a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

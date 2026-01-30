@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>性能优化 - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3>⚙️ 高级主题</h3>
+                    <ul>
+                        <li><a href="shader-variants.html">Shader 变体</a></li>
+                        <li><a href="compute-shader.html">Compute Shader</a></li>
+                        <li><a href="custom-render-pass.html">自定义渲染 Pass</a></li>
+                        <li><a href="performance-optimization.html" class="active">性能优化</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1>Shader 性能优化</h1>
+                <p class="subtitle">写出高效的 Shader 代码</p>
+
+                <div class="section">
+                    <h2>📊 性能指标</h2>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>ALU</h3>
+                            <p>算术逻辑运算数量</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>TEX</h3>
+                            <p>纹理采样次数</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>Overdraw</h3>
+                            <p>像素重复绘制次数</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>变体数量</h3>
+                            <p>Shader 编译版本数</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>🚀 优化技巧</h2>
+                    
+                    <h3>1. 精度选择</h3>
+                    <pre class="shader-code">// ❌ 不必要的高精度
+float4 frag() : SV_Target
+{
+    float uv_x = input.uv.x;  // 移动端 float 开销大
+    ...
+}
+
+// ✅ 使用合适的精度
+half4 frag() : SV_Target
+{
+    half2 uv = input.uv;      // UV 用 half 足够
+    half3 color = ...;        // 颜色用 half
+    float depth = ...;        // 深度需要 float
+}</pre>
+
+                    <div class="term-card">
+                        <h4>精度指南</h4>
+                        <div class="term-details">
+                            <ul>
+                                <li><strong>half：</strong>颜色、UV、法线、大部分计算</li>
+                                <li><strong>float：</strong>位置、深度、大数值运算</li>
+                                <li><strong>fixed：</strong>已废弃，改用 half</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <h3>2. 减少纹理采样</h3>
+                    <pre class="shader-code">// ❌ 多次采样同一纹理
+half4 color1 = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv);
+half4 color2 = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv + offset);
+half4 color3 = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv - offset);
+
+// ✅ 纹理打包 - 将多张贴图合并
+// R: Metallic, G: Occlusion, B: Detail, A: Smoothness
+half4 masks = SAMPLE_TEXTURE2D(_MaskMap, sampler_MaskMap, uv);
+half metallic = masks.r;
+half occlusion = masks.g;
+half smoothness = masks.a;</pre>
+
+                    <h3>3. 避免分支</h3>
+                    <pre class="shader-code">// ❌ 动态分支
+if (useNormalMap)
+{
+    normal = UnpackNormal(tex);
+}
+else
+{
+    normal = half3(0, 0, 1);
+}
+
+// ✅ 静态分支（编译时确定）
+#if defined(_USE_NORMAL_MAP)
+    normal = UnpackNormal(tex);
+#else
+    normal = half3(0, 0, 1);
+#endif
+
+// ✅ 或用 lerp 替代
+normal = lerp(half3(0, 0, 1), UnpackNormal(tex), _UseNormalMap);</pre>
+
+                    <h3>4. 计算移动到顶点着色器</h3>
+                    <pre class="shader-code">// ❌ 在片段着色器计算
+half4 frag(Varyings input) : SV_Target
+{
+    float3 viewDir = normalize(_WorldSpaceCameraPos - input.positionWS);
+    float3 reflectDir = reflect(-viewDir, input.normalWS);
+    ...
+}
+
+// ✅ 移到顶点着色器（如果精度允许）
+Varyings vert(Attributes input)
+{
+    Varyings output;
+    output.viewDirWS = normalize(_WorldSpaceCameraPos - positionWS);
+    ...
+}</pre>
+                </div>
+
+                <div class="section">
+                    <h2>⚠️ 常见性能陷阱</h2>
+                    
+                    <div class="warning-box">
+                        <h4>1. pow() 函数</h4>
+                        <p><code>pow(x, n)</code> 在 x < 0 时可能产生 NaN。使用前确保 x >= 0。</p>
+                        <pre class="shader-code">// 安全的 pow
+half safePow = pow(max(0, x), n);</pre>
+                    </div>
+                    
+                    <div class="warning-box">
+                        <h4>2. normalize() 开销</h4>
+                        <p>每次 normalize 需要平方根运算。如果向量已经是单位向量，避免重复归一化。</p>
+                    </div>
+                    
+                    <div class="warning-box">
+                        <h4>3. discard / clip</h4>
+                        <p>Alpha Test 会打断 Early-Z，导致性能下降。尽量减少使用。</p>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>📱 移动端优化</h2>
+                    
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>优化项</th>
+                                <th>建议</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>纹理采样</td>
+                                <td>每 Pass ≤ 4 次</td>
+                            </tr>
+                            <tr>
+                                <td>精度</td>
+                                <td>优先使用 half</td>
+                            </tr>
+                            <tr>
+                                <td>数学运算</td>
+                                <td>避免 sin/cos/pow，用查找表</td>
+                            </tr>
+                            <tr>
+                                <td>变体</td>
+                                <td>控制在 100 个以内</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="section">
+                    <h2>🔧 调试工具</h2>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>Frame Debugger</h3>
+                            <p>Window > Analysis > Frame Debugger</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>RenderDoc</h3>
+                            <p>详细 GPU 分析</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>Shader Compile</h3>
+                            <p>查看编译后的指令</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

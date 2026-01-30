@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shader 基础 - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="搜索内容...">
+                    <button id="searchBtn">🔍</button>
+                </div>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3>🚀 入门指南</h3>
+                    <ul>
+                        <li><a href="00-introduction.html">教程介绍</a></li>
+                        <li><a href="01-urp-overview.html">URP 概述</a></li>
+                        <li><a href="02-shader-basics.html" class="active">Shader 基础</a></li>
+                        <li><a href="03-terminology.html">术语与黑话</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>🔄 渲染流程</h3>
+                    <ul>
+                        <li><a href="urp-rendering-pipeline.html">URP 渲染管线</a></li>
+                        <li><a href="rendering-stages.html">渲染阶段详解</a></li>
+                        <li><a href="pass-types.html">Pass 类型</a></li>
+                        <li><a href="render-features.html">Render Features</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>💡 光照系统</h3>
+                    <ul>
+                        <li><a href="lighting-overview.html">光照概述</a></li>
+                        <li><a href="lambert.html">Lambert 漫反射</a></li>
+                        <li><a href="phong.html">Phong 高光</a></li>
+                        <li><a href="blinn-phong.html">Blinn-Phong</a></li>
+                        <li><a href="pbr-lighting.html">PBR 光照</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1>Shader 基础</h1>
+                <p class="subtitle">理解 Shader 是什么，以及它在渲染中的作用</p>
+
+                <!-- 什么是 Shader -->
+                <div class="section">
+                    <h2>📚 什么是 Shader？</h2>
+                    
+                    <div class="term-card">
+                        <h3>Shader = 着色器</h3>
+                        <div class="term-details">
+                            <p><strong>定义：</strong>运行在 GPU 上的小程序，决定物体如何被渲染</p>
+                            <p><strong>作用：</strong>控制顶点位置、颜色、光照、纹理等视觉效果</p>
+                            <p><strong>类比：</strong>就像化妆师，决定物体的"外表"看起来是什么样</p>
+                        </div>
+                    </div>
+
+                    <div class="visual-explanation">
+                        <h3>Shader 的作用图解</h3>
+                        <div class="diagram-container">
+                            <svg width="600" height="250" viewBox="0 0 600 250">
+                                <!-- 3D 模型 -->
+                                <rect x="30" y="80" width="100" height="100" rx="8" fill="#bdc3c7"/>
+                                <text x="80" y="135" text-anchor="middle" fill="#2c3e50" font-size="12">3D 模型</text>
+                                <text x="80" y="150" text-anchor="middle" fill="#7f8c8d" font-size="10">(顶点数据)</text>
+                                
+                                <!-- 箭头 -->
+                                <defs>
+                                    <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                        <polygon points="0 0, 10 3.5, 0 7" fill="#4a90e2"/>
+                                    </marker>
+                                </defs>
+                                <line x1="130" y1="130" x2="170" y2="130" stroke="#4a90e2" stroke-width="2" marker-end="url(#arrow)"/>
+                                
+                                <!-- Vertex Shader -->
+                                <rect x="180" y="60" width="100" height="60" rx="8" fill="#3498db"/>
+                                <text x="230" y="90" text-anchor="middle" fill="white" font-size="11" font-weight="bold">Vertex Shader</text>
+                                <text x="230" y="105" text-anchor="middle" fill="white" font-size="9">顶点着色器</text>
+                                
+                                <!-- 箭头 -->
+                                <line x1="230" y1="120" x2="230" y2="145" stroke="#4a90e2" stroke-width="2" marker-end="url(#arrow)"/>
+                                
+                                <!-- Fragment Shader -->
+                                <rect x="180" y="155" width="100" height="60" rx="8" fill="#9b59b6"/>
+                                <text x="230" y="185" text-anchor="middle" fill="white" font-size="11" font-weight="bold">Fragment Shader</text>
+                                <text x="230" y="200" text-anchor="middle" fill="white" font-size="9">片元着色器</text>
+                                
+                                <!-- 箭头 -->
+                                <line x1="280" y1="185" x2="320" y2="130" stroke="#4a90e2" stroke-width="2" marker-end="url(#arrow)"/>
+                                
+                                <!-- 纹理 -->
+                                <rect x="330" y="30" width="80" height="60" rx="4" fill="#e74c3c"/>
+                                <text x="370" y="55" text-anchor="middle" fill="white" font-size="10">纹理</text>
+                                <text x="370" y="70" text-anchor="middle" fill="white" font-size="9">Texture</text>
+                                
+                                <!-- 光照 -->
+                                <rect x="330" y="100" width="80" height="60" rx="4" fill="#f39c12"/>
+                                <text x="370" y="125" text-anchor="middle" fill="white" font-size="10">光照</text>
+                                <text x="370" y="140" text-anchor="middle" fill="white" font-size="9">Lighting</text>
+                                
+                                <!-- 效果 -->
+                                <rect x="330" y="170" width="80" height="60" rx="4" fill="#27ae60"/>
+                                <text x="370" y="195" text-anchor="middle" fill="white" font-size="10">特效</text>
+                                <text x="370" y="210" text-anchor="middle" fill="white" font-size="9">Effects</text>
+                                
+                                <!-- 箭头 -->
+                                <line x1="410" y1="130" x2="450" y2="130" stroke="#4a90e2" stroke-width="2" marker-end="url(#arrow)"/>
+                                
+                                <!-- 最终图像 -->
+                                <rect x="460" y="80" width="120" height="100" rx="8" fill="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"/>
+                                <text x="520" y="125" text-anchor="middle" fill="white" font-size="12">最终图像</text>
+                                <text x="520" y="145" text-anchor="middle" fill="white" font-size="10">屏幕上显示</text>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Shader 的组成 -->
+                <div class="section">
+                    <h2>🔧 URP Shader 结构</h2>
+                    
+                    <h3>基本结构</h3>
+                    <pre class="shader-code">Shader "Custom/MyShader"
+{
+    Properties
+    {
+        _BaseMap ("Base Map", 2D) = "white" {}
+        _BaseColor ("Base Color", Color) = (1,1,1,1)
+    }
+    
+    SubShader
+    {
+        Tags { "RenderType"="Opaque" "RenderPipeline"="UniversalPipeline" }
+        
+        Pass
+        {
+            Name "ForwardLit"
+            Tags { "LightMode"="UniversalForward" }
+            
+            HLSLPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float2 uv : TEXCOORD0;
+            };
+            
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float2 uv : TEXCOORD0;
+            };
+            
+            TEXTURE2D(_BaseMap);
+            SAMPLER(sampler_BaseMap);
+            
+            CBUFFER_START(UnityPerMaterial)
+                float4 _BaseMap_ST;
+                half4 _BaseColor;
+            CBUFFER_END
+            
+            Varyings vert(Attributes input)
+            {
+                Varyings output;
+                output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
+                output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+                return output;
+            }
+            
+            half4 frag(Varyings input) : SV_Target
+            {
+                half4 color = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv);
+                return color * _BaseColor;
+            }
+            ENDHLSL
+        }
+    }
+}</pre>
+
+                    <h3>结构解析</h3>
+                    <div class="steps">
+                        <div class="step">
+                            <span class="step-number">1</span>
+                            <strong>Properties 属性块</strong>
+                            <p>定义可在 Inspector 中调整的参数，如纹理、颜色、数值等</p>
+                        </div>
+                        
+                        <div class="step">
+                            <span class="step-number">2</span>
+                            <strong>SubShader 子着色器</strong>
+                            <p>包含一个或多个 Pass，不同硬件会选择合适的 SubShader</p>
+                        </div>
+                        
+                        <div class="step">
+                            <span class="step-number">3</span>
+                            <strong>Pass 渲染通道</strong>
+                            <p>一次完整的渲染过程，包含顶点着色器和片元着色器</p>
+                        </div>
+                        
+                        <div class="step">
+                            <span class="step-number">4</span>
+                            <strong>HLSLPROGRAM</strong>
+                            <p>HLSL 代码块，包含实际的着色器逻辑</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 顶点着色器 vs 片元着色器 -->
+                <div class="section">
+                    <h2>🎯 顶点着色器 vs 片元着色器</h2>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);">
+                            <h3>Vertex Shader 顶点着色器</h3>
+                            <p><strong>输入：</strong>模型的顶点数据</p>
+                            <p><strong>作用：</strong>变换顶点位置</p>
+                            <p><strong>执行次数：</strong>每个顶点执行一次</p>
+                            <p><strong>典型操作：</strong>MVP 变换、顶点动画</p>
+                        </div>
+                        
+                        <div class="feature-card" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">
+                            <h3>Fragment Shader 片元着色器</h3>
+                            <p><strong>输入：</strong>插值后的数据</p>
+                            <p><strong>作用：</strong>计算像素颜色</p>
+                            <p><strong>执行次数：</strong>每个像素执行一次</p>
+                            <p><strong>典型操作：</strong>纹理采样、光照计算</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 术语解释 -->
+                <div class="section">
+                    <h2>📖 术语解释</h2>
+                    
+                    <div class="term-card">
+                        <h3>HLSL</h3>
+                        <div class="term-details">
+                            <p><strong>全称：</strong>High Level Shading Language（高级着色语言）</p>
+                            <p><strong>来源：</strong>Microsoft 开发，用于 DirectX</p>
+                            <p><strong>特点：</strong>类 C 语法，URP 使用的主要着色语言</p>
+                        </div>
+                    </div>
+                    
+                    <div class="term-card">
+                        <h3>Semantics 语义</h3>
+                        <div class="term-details">
+                            <p><strong>作用：</strong>告诉 GPU 数据的含义</p>
+                            <p><strong>常见语义：</strong></p>
+                            <ul>
+                                <li><code>POSITION</code> - 顶点位置</li>
+                                <li><code>NORMAL</code> - 法线方向</li>
+                                <li><code>TEXCOORD0</code> - UV 坐标</li>
+                                <li><code>SV_POSITION</code> - 裁剪空间位置</li>
+                                <li><code>SV_Target</code> - 输出颜色</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="term-card">
+                        <h3>SRP Batcher 兼容</h3>
+                        <div class="term-details">
+                            <p><strong>要求：</strong>使用 CBUFFER_START/END 包裹 uniform 变量</p>
+                            <p><strong>好处：</strong>减少 CPU 开销，提升渲染性能</p>
+                            <p><strong>检查：</strong>Frame Debugger 中可查看是否兼容</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

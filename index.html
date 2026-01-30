@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Unity URP 2022 LTS 渲染管线可视化交互学习教程 - 从零开始全面掌握 Shader 编程">
+    <meta name="keywords" content="Unity, URP, Shader, HLSL, 渲染管线, 图形学, Unity 2022 LTS">
+    <title>Unity URP 2022 LTS 渲染管线可视化交互学习教程</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎮</text></svg>">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 侧边栏导航 -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="搜索内容...">
+                    <button id="searchBtn">🔍</button>
+                </div>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3>🚀 入门指南</h3>
+                    <ul>
+                        <li><a href="html/00-introduction.html">教程介绍</a></li>
+                        <li><a href="html/01-urp-overview.html">URP 概述</a></li>
+                        <li><a href="html/02-shader-basics.html">Shader 基础</a></li>
+                        <li><a href="html/03-terminology.html">术语与黑话</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>🔄 渲染流程</h3>
+                    <ul>
+                        <li><a href="html/urp-rendering-pipeline.html">URP 渲染管线</a></li>
+                        <li><a href="html/rendering-stages.html">渲染阶段详解</a></li>
+                        <li><a href="html/pass-types.html">Pass 类型</a></li>
+                        <li><a href="html/render-features.html">Render Features</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>📐 坐标空间</h3>
+                    <ul>
+                        <li><a href="html/coordinate-spaces.html">坐标系概述</a></li>
+                        <li><a href="html/object-space.html">模型空间详解</a></li>
+                        <li><a href="html/world-space.html">世界空间详解</a></li>
+                        <li><a href="html/view-space.html">观察空间详解</a></li>
+                        <li><a href="html/clip-space.html">裁剪空间详解</a></li>
+                        <li><a href="html/screen-space.html">屏幕空间详解</a></li>
+                        <li><a href="html/tangent-space.html">切线空间详解</a></li>
+                        <li><a href="html/mvp-matrix.html">MVP 矩阵详解</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>🎨 UV 变换</h3>
+                    <ul>
+                        <li><a href="html/rotate-uv.html">RotateUV - 旋转矩阵</a></li>
+                        <li><a href="html/uv-scroll.html">UV 滚动</a></li>
+                        <li><a href="html/uv-scale.html">UV 缩放</a></li>
+                        <li><a href="html/uv-offset.html">UV 偏移</a></li>
+                        <li><a href="html/uv-animation.html">UV 动画</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>🖼️ 纹理操作</h3>
+                    <ul>
+                        <li><a href="html/texture-sampling.html">纹理采样</a></li>
+                        <li><a href="html/texture-addressing.html">纹理寻址模式</a></li>
+                        <li><a href="html/texture-blend.html">纹理混合</a></li>
+                        <li><a href="html/mipmap.html">Mipmap 详解</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>💡 光照系统</h3>
+                    <ul>
+                        <li><a href="html/lighting-overview.html">光照概述</a></li>
+                        <li><a href="html/lambert.html">Lambert 漫反射</a></li>
+                        <li><a href="html/phong.html">Phong 高光</a></li>
+                        <li><a href="html/blinn-phong.html">Blinn-Phong</a></li>
+                        <li><a href="html/pbr-lighting.html">PBR 光照</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>✨ 特效函数</h3>
+                    <ul>
+                        <li><a href="html/dissolve.html">溶解效果</a></li>
+                        <li><a href="html/distortion.html">扭曲效果</a></li>
+                        <li><a href="html/fresnel.html">菲涅尔效果</a></li>
+                        <li><a href="html/rim-light.html">边缘光</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h3>🔧 高级主题</h3>
+                    <ul>
+                        <li><a href="html/shader-variants.html">Shader Variants</a></li>
+                        <li><a href="html/compute-shader.html">Compute Shader</a></li>
+                        <li><a href="html/custom-render-pass.html">自定义 Render Pass</a></li>
+                        <li><a href="html/performance-optimization.html">性能优化</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <div class="welcome-page">
+                <h1>Unity URP 2022 LTS 渲染管线可视化交互学习教程</h1>
+                <p class="subtitle">从零开始，全面掌握 Unity Universal Render Pipeline 的每一个细节</p>
+                
+                <div class="intro-section">
+                    <h2>📚 教程特色</h2>
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>🎯 事无巨细</h3>
+                            <p>涵盖 URP 渲染管线的每一个环节，从基础概念到高级应用，不留死角</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>📐 可视化学习</h3>
+                            <p>每个概念都有交互式可视化演示，直观理解矩阵变换、坐标转换等复杂概念</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>💬 黑话解析</h3>
+                            <p>详细解释 Unity Shader 中的各种术语、缩写和历史包袱，不再困惑</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>🔍 交互式探索</h3>
+                            <p>可以调整参数，实时查看效果变化，加深理解</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>💻 完整代码</h3>
+                            <p>提供完整的 HLSL 代码示例，包含详细注释和最佳实践</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>📖 历史脉络</h3>
+                            <p>了解 Unity Shader 的演进历史，理解设计思路和命名由来</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="learning-path">
+                    <h2>🎓 推荐学习路径</h2>
+                    <div class="path-steps">
+                        <div class="path-step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <h3>基础入门</h3>
+                                <p>了解 URP 是什么，Shader 的基础概念，以及 Unity Shader 中的各种术语和黑话</p>
+                                <ul>
+                                    <li><a href="html/00-introduction.html">教程介绍</a></li>
+                                    <li><a href="html/01-urp-overview.html">URP 概述</a></li>
+                                    <li><a href="html/02-shader-basics.html">Shader 基础</a></li>
+                                    <li><a href="html/03-terminology.html">术语与黑话</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="path-step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <h3>渲染流程</h3>
+                                <p>深入理解 URP 的渲染管线，了解每个阶段的作用和实现原理</p>
+                                <ul>
+                                    <li><a href="html/urp-rendering-pipeline.html">URP 渲染管线</a></li>
+                                    <li><a href="html/rendering-stages.html">渲染阶段详解</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="path-step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <h3>坐标空间</h3>
+                                <p>掌握渲染管线中的坐标变换，理解从模型空间到屏幕空间的完整流程</p>
+                                <ul>
+                                    <li><a href="html/coordinate-spaces.html">坐标系概述</a></li>
+                                    <li><a href="html/mvp-matrix.html">MVP 矩阵详解</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="path-step">
+                            <div class="step-number">4</div>
+                            <div class="step-content">
+                                <h3>UV 与纹理</h3>
+                                <p>学习 UV 坐标系统和纹理操作，掌握各种 UV 变换和纹理采样技术</p>
+                                <ul>
+                                    <li><a href="html/rotate-uv.html">RotateUV - 旋转矩阵</a></li>
+                                    <li><a href="html/texture-sampling.html">纹理采样</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="path-step">
+                            <div class="step-number">5</div>
+                            <div class="step-content">
+                                <h3>光照系统</h3>
+                                <p>理解各种光照模型，从基础的 Lambert 到现代的 PBR 光照</p>
+                                <ul>
+                                    <li><a href="html/lighting-overview.html">光照概述</a></li>
+                                    <li><a href="html/lambert.html">Lambert 漫反射</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="path-step">
+                            <div class="step-number">6</div>
+                            <div class="step-content">
+                                <h3>高级应用</h3>
+                                <p>学习特效实现、性能优化和高级渲染技术</p>
+                                <ul>
+                                    <li><a href="html/dissolve.html">溶解效果</a></li>
+                                    <li><a href="html/performance-optimization.html">性能优化</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="quick-links">
+                    <h2>🔗 快速链接</h2>
+                    <div class="link-grid">
+                        <a href="html/urp-rendering-pipeline.html" class="quick-link-card">
+                            <h3>URP 渲染管线</h3>
+                            <p>了解 URP 的完整渲染流程</p>
+                        </a>
+                        <a href="html/coordinate-spaces.html" class="quick-link-card">
+                            <h3>坐标空间转换</h3>
+                            <p>掌握渲染管线中的坐标变换</p>
+                        </a>
+                        <a href="html/rotate-uv.html" class="quick-link-card">
+                            <h3>旋转矩阵</h3>
+                            <p>理解矩阵变换的数学原理</p>
+                        </a>
+                        <a href="html/03-terminology.html" class="quick-link-card">
+                            <h3>术语与黑话</h3>
+                            <p>理解 Unity Shader 的各种术语</p>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="section" style="margin-top: 40px;">
+                    <h2>🎮 Unity 2022 LTS 专属特性</h2>
+                    <p style="color: var(--text-light); line-height: 1.8;">
+                        本教程专为 <strong>Unity 2022 LTS</strong>（长期支持版）编写，覆盖最新的 URP 14.x 版本特性：
+                    </p>
+                    <ul style="margin-left: 20px; color: var(--text-light); line-height: 2;">
+                        <li>✅ 全新的 <strong>Render Graph</strong> 架构（预览）</li>
+                        <li>✅ 增强的 <strong>Forward+</strong> 渲染路径</li>
+                        <li>✅ 改进的 <strong>LOD Crossfade</strong> 支持</li>
+                        <li>✅ 新的 <strong>Screen Space Ambient Occlusion (SSAO)</strong></li>
+                        <li>✅ 优化的 <strong>Deferred Rendering</strong> 路径</li>
+                        <li>✅ 更好的 <strong>Shader Stripping</strong> 工具</li>
+                    </ul>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

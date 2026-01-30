@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>纹理寻址 - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3">🖼️ 纹理</h3>
+                    <ul>
+                        <li><a href="texture-sampling.html">纹理采样</a></li>
+                        <li><a href="mipmap.html">Mipmap</a></li>
+                        <li><a href="texture-addressing.html" class="active">纹理寻址</a></li>
+                        <li><a href="texture-blend.html">纹理混合</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1">纹理寻址 (Wrap Mode)</h1>
+                <p class="subtitle">控制 UV 超出 [0,1] 范围时的行为</p>
+
+                <div class="section">
+                    <h2">📚 寻址模式</h2>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3">🔄 Repeat</h3>
+                            <p>重复平铺（默认）</p>
+                            <svg width="80" height="80" viewBox="0 0 80 80">
+                                <rect x="0" y="0" width="40" height="40" fill="#4a90d9"/>
+                                <rect x="40" y="0" width="40" height="40" fill="#4a90d9"/>
+                                <rect x="0" y="40" width="40" height="40" fill="#4a90d9"/>
+                                <rect x="40" y="40" width="40" height="40" fill="#4a90d9"/>
+                                <line x1="40" y1="0" x2="40" y2="80" stroke="#fff" stroke-dasharray="2"/>
+                                <line x1="0" y1="40" x2="80" y2="40" stroke="#fff" stroke-dasharray="2"/>
+                            </svg>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3">📌 Clamp</h3>
+                            <p>边缘像素延伸</p>
+                            <svg width="80" height="80" viewBox="0 0 80 80">
+                                <rect x="20" y="20" width="40" height="40" fill="#4a90d9"/>
+                                <rect x="0" y="20" width="20" height="40" fill="#3a80c9"/>
+                                <rect x="60" y="20" width="20" height="40" fill="#3a80c9"/>
+                                <rect x="20" y="0" width="40" height="20" fill="#3a80c9"/>
+                                <rect x="20" y="60" width="40" height="20" fill="#3a80c9"/>
+                                <rect x="0" y="0" width="20" height="20" fill="#2a70b9"/>
+                                <rect x="60" y="0" width="20" height="20" fill="#2a70b9"/>
+                                <rect x="0" y="60" width="20" height="20" fill="#2a70b9"/>
+                                <rect x="60" y="60" width="20" height="20" fill="#2a70b9"/>
+                            </svg>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3">🪞 Mirror</h3>
+                            <p>镜像重复</p>
+                            <svg width="80" height="80" viewBox="0 0 80 80">
+                                <rect x="0" y="0" width="40" height="40" fill="#4a90d9"/>
+                                <rect x="40" y="0" width="40" height="40" fill="#4a90d9" transform="scale(-1,1) translate(-120,0)"/>
+                                <rect x="0" y="40" width="40" height="40" fill="#4a90d9" transform="scale(1,-1) translate(0,-120)"/>
+                                <rect x="40" y="40" width="40" height="40" fill="#4a90d9" transform="scale(-1,-1) translate(-120,-120)"/>
+                            </svg>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3">🔲 MirrorOnce</h3>
+                            <p>镜像一次后 Clamp</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2">💻 Shader 中设置</h2>
+                    
+                    <pre class="shader-code">// 使用内联采样器状态（URP/HDRP）
+SAMPLER(sampler_linear_repeat);   // 线性过滤 + Repeat
+SAMPLER(sampler_linear_clamp);    // 线性过滤 + Clamp
+SAMPLER(sampler_point_repeat);    // 点过滤 + Repeat
+SAMPLER(sampler_point_clamp);     // 点过滤 + Clamp
+
+// 使用
+half4 color = SAMPLE_TEXTURE2D(_MainTex, sampler_linear_clamp, uv);
+
+// 手动 frac/saturate 模拟
+float2 repeatUV = frac(uv);       // 模拟 Repeat
+float2 clampUV = saturate(uv);    // 模拟 Clamp</pre>
+                </div>
+
+                <div class="section">
+                    <h2">🎮 应用场景</h2>
+                    
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>模式</th>
+                                <th>适用场景</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Repeat</strong></td>
+                                <td>地面、墙壁等可平铺纹理</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Clamp</strong></td>
+                                <td>UI、Decal、RenderTexture</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Mirror</strong></td>
+                                <td>无缝衔接的对称纹理</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="section">
+                    <h2">⚠️ 注意事项</h2>
+                    
+                    <div class="warning-box">
+                        <h4">NPOT 纹理</h4>
+                        <p>非 2 的幂纹理可能不支持 Repeat 模式，会被强制 Clamp。</p>
+                    </div>
+                    
+                    <div class="warning-box">
+                        <h4">边缘缝隙</h4>
+                        <p>平铺纹理时，如果边缘像素不连续，会出现明显接缝。确保纹理可无缝平铺。</p>
+                    </div>
+                </div>
+
+                <div class="nav-links">
+                    <a href="mipmap.html">← Mipmap</a>
+                    <a href="texture-blend.html">纹理混合 →</a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

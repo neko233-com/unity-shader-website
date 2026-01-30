@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PBR 光照 - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3>💡 光照系统</h3>
+                    <ul>
+                        <li><a href="lighting-overview.html">光照概述</a></li>
+                        <li><a href="lambert.html">Lambert 漫反射</a></li>
+                        <li><a href="phong.html">Phong 高光</a></li>
+                        <li><a href="blinn-phong.html">Blinn-Phong</a></li>
+                        <li><a href="pbr-lighting.html" class="active">PBR 光照</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1>PBR 光照 (Physically Based Rendering)</h1>
+                <p class="subtitle">物理真实的现代渲染技术</p>
+
+                <div class="section">
+                    <h2>📚 什么是 PBR</h2>
+                    <p>PBR（基于物理的渲染）是一套遵循物理规律的渲染方法，能在各种光照环境下产生一致且真实的视觉效果。</p>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>⚡ 能量守恒</h3>
+                            <p>反射光能量不超过入射光</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🔬 微表面模型</h3>
+                            <p>用微小镜面模拟粗糙度</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🌈 菲涅尔效应</h3>
+                            <p>边缘反射率增加</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>🎨 核心参数</h2>
+                    
+                    <div class="term-card">
+                        <h3>金属度 (Metallic)</h3>
+                        <div class="term-details">
+                            <p><strong>范围：</strong>0 - 1</p>
+                            <p><strong>非金属 (0)：</strong>漫反射为主，F0 ≈ 0.04</p>
+                            <p><strong>金属 (1)：</strong>纯镜面反射，F0 = Albedo</p>
+                        </div>
+                    </div>
+                    
+                    <div class="term-card">
+                        <h3>粗糙度 (Roughness) / 光滑度 (Smoothness)</h3>
+                        <div class="term-details">
+                            <p><strong>关系：</strong>Roughness = 1 - Smoothness</p>
+                            <p><strong>粗糙 (1)：</strong>高光宽泛，表面无光泽</p>
+                            <p><strong>光滑 (0)：</strong>高光锐利，镜面效果</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>🧮 BRDF 公式</h2>
+                    
+                    <div class="diagram-container">
+                        <svg viewBox="0 0 500 180" class="brdf-diagram">
+                            <text x="250" y="30" text-anchor="middle" fill="#fff" font-size="14">BRDF = kD × fDiffuse + kS × fSpecular</text>
+                            
+                            <rect x="50" y="60" width="180" height="100" fill="#1a1a2e" stroke="#4a9eff" rx="5"/>
+                            <text x="140" y="85" text-anchor="middle" fill="#4a9eff" font-size="12">漫反射项</text>
+                            <text x="140" y="110" text-anchor="middle" fill="#ccc" font-size="11">fDiffuse = albedo / π</text>
+                            <text x="140" y="135" text-anchor="middle" fill="#888" font-size="10">Lambert (简化)</text>
+                            
+                            <rect x="270" y="60" width="180" height="100" fill="#1a1a2e" stroke="#00ff88" rx="5"/>
+                            <text x="360" y="85" text-anchor="middle" fill="#00ff88" font-size="12">镜面反射项</text>
+                            <text x="360" y="110" text-anchor="middle" fill="#ccc" font-size="11">D × F × G</text>
+                            <text x="360" y="135" text-anchor="middle" fill="#888" font-size="10">Cook-Torrance</text>
+                        </svg>
+                    </div>
+                    
+                    <h3>镜面反射三要素</h3>
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>D - 法线分布</h3>
+                            <p>微表面法线的统计分布</p>
+                            <p><small>常用: GGX / Trowbridge-Reitz</small></p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>F - 菲涅尔</h3>
+                            <p>反射率随角度变化</p>
+                            <p><small>常用: Schlick 近似</small></p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>G - 几何遮蔽</h3>
+                            <p>微表面自遮挡</p>
+                            <p><small>常用: Smith-GGX</small></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>💻 URP 实现</h2>
+                    
+                    <pre class="shader-code">// URP 内置 PBR 函数
+#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+
+half4 frag(Varyings input) : SV_Target
+{
+    // 准备表面数据
+    SurfaceData surfaceData;
+    surfaceData.albedo = _BaseColor.rgb;
+    surfaceData.metallic = _Metallic;
+    surfaceData.smoothness = _Smoothness;
+    surfaceData.normalTS = UnpackNormal(SAMPLE_TEXTURE2D(_BumpMap, sampler_BumpMap, input.uv));
+    surfaceData.occlusion = 1.0;
+    surfaceData.emission = 0;
+    surfaceData.alpha = _BaseColor.a;
+    
+    // 准备输入数据
+    InputData inputData;
+    inputData.positionWS = input.positionWS;
+    inputData.normalWS = TransformTangentToWorld(surfaceData.normalTS, 
+        half3x3(input.tangentWS, input.bitangentWS, input.normalWS));
+    inputData.viewDirectionWS = GetWorldSpaceNormalizeViewDir(input.positionWS);
+    inputData.shadowCoord = TransformWorldToShadowCoord(input.positionWS);
+    
+    // 计算 PBR 光照
+    half4 color = UniversalFragmentPBR(inputData, surfaceData);
+    
+    return color;
+}</pre>
+                </div>
+
+                <div class="section">
+                    <h2>🎯 简化版 PBR</h2>
+                    
+                    <pre class="shader-code">// 简化的 PBR 实现
+half3 SimplePBR(half3 albedo, half metallic, half roughness,
+                half3 N, half3 V, half3 L, half3 lightColor)
+{
+    half3 H = normalize(L + V);
+    half NdotL = saturate(dot(N, L));
+    half NdotV = saturate(dot(N, V));
+    half NdotH = saturate(dot(N, H));
+    half VdotH = saturate(dot(V, H));
+    
+    // 金属度影响 F0
+    half3 F0 = lerp(0.04, albedo, metallic);
+    
+    // 菲涅尔 (Schlick)
+    half3 F = F0 + (1.0 - F0) * pow(1.0 - VdotH, 5.0);
+    
+    // 法线分布 (GGX)
+    half a = roughness * roughness;
+    half a2 = a * a;
+    half d = NdotH * NdotH * (a2 - 1.0) + 1.0;
+    half D = a2 / (PI * d * d);
+    
+    // 几何遮蔽 (简化)
+    half k = roughness * 0.5;
+    half G = NdotL * NdotV / ((NdotL * (1.0 - k) + k) * (NdotV * (1.0 - k) + k));
+    
+    // 镜面反射
+    half3 specular = D * F * G / (4.0 * NdotL * NdotV + 0.001);
+    
+    // 漫反射（金属没有漫反射）
+    half3 kD = (1.0 - F) * (1.0 - metallic);
+    half3 diffuse = kD * albedo / PI;
+    
+    return (diffuse + specular) * lightColor * NdotL;
+}</pre>
+                </div>
+
+                <div class="section">
+                    <h2>⚠️ 常见问题</h2>
+                    
+                    <div class="warning-box">
+                        <h4>金属度贴图</h4>
+                        <p>金属度通常只有 0 或 1，中间值用于过渡区域（如生锈金属）。不要用灰度值表示"半金属"。</p>
+                    </div>
+                    
+                    <div class="warning-box">
+                        <h4>Albedo 亮度</h4>
+                        <p>非金属 Albedo 值应在 50-240 (sRGB) 范围内。过暗或过亮都不符合物理。</p>
+                    </div>
+                </div>
+
+                <div class="nav-links">
+                    <a href="blinn-phong.html">← Blinn-Phong</a>
+                    <a href="fresnel.html">菲涅尔效果 →</a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

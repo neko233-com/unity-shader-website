@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>世界空间 - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3>📐 坐标空间</h3>
+                    <ul>
+                        <li><a href="coordinate-spaces.html">坐标空间概述</a></li>
+                        <li><a href="object-space.html">物体空间</a></li>
+                        <li><a href="world-space.html" class="active">世界空间</a></li>
+                        <li><a href="view-space.html">观察空间</a></li>
+                        <li><a href="clip-space.html">裁剪空间</a></li>
+                        <li><a href="screen-space.html">屏幕空间</a></li>
+                        <li><a href="tangent-space.html">切线空间</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1>世界空间 (World Space)</h1>
+                <p class="subtitle">场景中所有物体共享的全局坐标系统</p>
+
+                <div class="section">
+                    <h2>📚 定义</h2>
+                    <p>世界空间是整个场景的全局坐标系统。所有物体、光源、相机都在这个统一的坐标系中定位。</p>
+                    
+                    <div class="term-card">
+                        <h3>特点</h3>
+                        <div class="term-details">
+                            <ul>
+                                <li>场景原点：(0, 0, 0)</li>
+                                <li>所有物体共享同一坐标系</li>
+                                <li>光照计算通常在此空间进行</li>
+                                <li>Unity 使用左手坐标系</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>💻 在 Shader 中使用</h2>
+                    
+                    <pre class="shader-code">// 常用世界空间变量和函数
+struct Varyings
+{
+    float4 positionCS : SV_POSITION;
+    float3 positionWS : TEXCOORD0;  // 世界空间位置
+    float3 normalWS : TEXCOORD1;    // 世界空间法线
+};
+
+Varyings vert(Attributes input)
+{
+    Varyings output;
+    
+    // 变换到世界空间
+    output.positionWS = TransformObjectToWorld(input.positionOS.xyz);
+    output.normalWS = TransformObjectToWorldNormal(input.normalOS);
+    output.positionCS = TransformWorldToHClip(output.positionWS);
+    
+    return output;
+}
+
+half4 frag(Varyings input) : SV_Target
+{
+    // 世界空间相机位置
+    float3 cameraPos = _WorldSpaceCameraPos;
+    
+    // 计算视线方向（世界空间）
+    float3 viewDir = normalize(cameraPos - input.positionWS);
+    
+    // 主光源方向（世界空间）
+    float3 lightDir = normalize(_MainLightPosition.xyz);
+    
+    // 光照计算...
+}</pre>
+                </div>
+
+                <div class="section">
+                    <h2>🎮 应用场景</h2>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>💡 光照计算</h3>
+                            <p>光源方向、阴影都在世界空间计算</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🌍 世界 UV</h3>
+                            <p>地形纹理平铺，避免接缝</p>
+                            <pre class="shader-code">float2 worldUV = positionWS.xz * 0.1;</pre>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🌫️ 高度雾</h3>
+                            <p>基于世界空间 Y 坐标的雾效</p>
+                            <pre class="shader-code">float fog = saturate(positionWS.y / _FogHeight);</pre>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3">📍 距离效果</h3>
+                            <p>基于与某点距离的效果</p>
+                            <pre class="shader-code">float dist = distance(positionWS, _EffectCenter);</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>🔧 常用内置变量</h2>
+                    
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>变量</th>
+                                <th>说明</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>_WorldSpaceCameraPos</code></td>
+                                <td>相机世界空间位置</td>
+                            </tr>
+                            <tr>
+                                <td><code>_MainLightPosition</code></td>
+                                <td>主光源方向（方向光）或位置（点光）</td>
+                            </tr>
+                            <tr>
+                                <td><code>unity_ObjectToWorld</code></td>
+                                <td>物体空间到世界空间矩阵</td>
+                            </tr>
+                            <tr>
+                                <td><code>unity_WorldToObject</code></td>
+                                <td>世界空间到物体空间矩阵</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="nav-links">
+                    <a href="object-space.html">← 物体空间</a>
+                    <a href="view-space.html">观察空间 →</a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

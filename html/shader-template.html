@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title">Shader 模板 - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3">📝 实践</h3>
+                    <ul>
+                        <li><a href="shader-template.html" class="active">Shader 模板</a></li>
+                        <li><a href="shader-magic.html">Shader 小技巧</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1">URP Shader 模板</h1>
+                <p class="subtitle">开箱即用的 Shader 模板代码</p>
+
+                <div class="section">
+                    <h2">📄 基础 Unlit 模板</h2>
+                    
+                    <pre class="shader-code">Shader "Custom/URPUnlit"
+{
+    Properties
+    {
+        _BaseMap("Base Map", 2D) = "white" {}
+        _BaseColor("Base Color", Color) = (1, 1, 1, 1)
+    }
+    
+    SubShader
+    {
+        Tags 
+        { 
+            "RenderType" = "Opaque" 
+            "RenderPipeline" = "UniversalPipeline"
+            "Queue" = "Geometry"
+        }
+        
+        Pass
+        {
+            Name "Unlit"
+            Tags { "LightMode" = "UniversalForward" }
+            
+            HLSLPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            #pragma multi_compile_fog
+            
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float2 uv : TEXCOORD0;
+            };
+            
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float2 uv : TEXCOORD0;
+                float fogFactor : TEXCOORD1;
+            };
+            
+            TEXTURE2D(_BaseMap);
+            SAMPLER(sampler_BaseMap);
+            
+            CBUFFER_START(UnityPerMaterial)
+                float4 _BaseMap_ST;
+                half4 _BaseColor;
+            CBUFFER_END
+            
+            Varyings vert(Attributes input)
+            {
+                Varyings output;
+                output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
+                output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+                output.fogFactor = ComputeFogFactor(output.positionCS.z);
+                return output;
+            }
+            
+            half4 frag(Varyings input) : SV_Target
+            {
+                half4 color = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv) * _BaseColor;
+                color.rgb = MixFog(color.rgb, input.fogFactor);
+                return color;
+            }
+            ENDHLSL
+        }
+    }
+}</pre>
+                </div>
+
+                <div class="section">
+                    <h2">💡 带光照的 Lit 模板</h2>
+                    
+                    <pre class="shader-code">Shader "Custom/URPLit"
+{
+    Properties
+    {
+        _BaseMap("Base Map", 2D) = "white" {}
+        _BaseColor("Base Color", Color) = (1, 1, 1, 1)
+        _Smoothness("Smoothness", Range(0, 1)) = 0.5
+    }
+    
+    SubShader
+    {
+        Tags 
+        { 
+            "RenderType" = "Opaque" 
+            "RenderPipeline" = "UniversalPipeline"
+        }
+        
+        Pass
+        {
+            Name "ForwardLit"
+            Tags { "LightMode" = "UniversalForward" }
+            
+            HLSLPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            
+            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE
+            #pragma multi_compile _ _ADDITIONAL_LIGHTS
+            #pragma multi_compile _ _SHADOWS_SOFT
+            #pragma multi_compile_fog
+            
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
+                float2 uv : TEXCOORD0;
+            };
+            
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float2 uv : TEXCOORD0;
+                float3 positionWS : TEXCOORD1;
+                float3 normalWS : TEXCOORD2;
+                float fogFactor : TEXCOORD3;
+            };
+            
+            TEXTURE2D(_BaseMap);
+            SAMPLER(sampler_BaseMap);
+            
+            CBUFFER_START(UnityPerMaterial)
+                float4 _BaseMap_ST;
+                half4 _BaseColor;
+                half _Smoothness;
+            CBUFFER_END
+            
+            Varyings vert(Attributes input)
+            {
+                Varyings output;
+                output.positionWS = TransformObjectToWorld(input.positionOS.xyz);
+                output.positionCS = TransformWorldToHClip(output.positionWS);
+                output.normalWS = TransformObjectToWorldNormal(input.normalOS);
+                output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+                output.fogFactor = ComputeFogFactor(output.positionCS.z);
+                return output;
+            }
+            
+            half4 frag(Varyings input) : SV_Target
+            {
+                // 采样纹理
+                half4 baseColor = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv) * _BaseColor;
+                
+                // 准备光照数据
+                float3 normalWS = normalize(input.normalWS);
+                float3 viewDirWS = GetWorldSpaceNormalizeViewDir(input.positionWS);
+                
+                // 获取主光源
+                float4 shadowCoord = TransformWorldToShadowCoord(input.positionWS);
+                Light mainLight = GetMainLight(shadowCoord);
+                
+                // 简单 Lambert + Blinn-Phong
+                float NdotL = saturate(dot(normalWS, mainLight.direction));
+                float3 diffuse = baseColor.rgb * NdotL * mainLight.color * mainLight.shadowAttenuation;
+                
+                float3 halfDir = normalize(mainLight.direction + viewDirWS);
+                float NdotH = saturate(dot(normalWS, halfDir));
+                float3 specular = pow(NdotH, _Smoothness * 128) * mainLight.color;
+                
+                // 环境光
+                float3 ambient = baseColor.rgb * 0.1;
+                
+                half3 finalColor = ambient + diffuse + specular;
+                finalColor = MixFog(finalColor, input.fogFactor);
+                
+                return half4(finalColor, baseColor.a);
+            }
+            ENDHLSL
+        }
+        
+        // Shadow Caster Pass
+        Pass
+        {
+            Name "ShadowCaster"
+            Tags { "LightMode" = "ShadowCaster" }
+            
+            HLSLPROGRAM
+            #pragma vertex ShadowPassVertex
+            #pragma fragment ShadowPassFragment
+            #include "Packages/com.unity.render-pipelines.universal/Shaders/ShadowCasterPass.hlsl"
+            ENDHLSL
+        }
+    }
+}</pre>
+                </div>
+
+                <div class="section">
+                    <h2">🔍 透明材质模板</h2>
+                    
+                    <pre class="shader-code">// 关键修改点
+Tags 
+{ 
+    "RenderType" = "Transparent" 
+    "Queue" = "Transparent"
+    "RenderPipeline" = "UniversalPipeline"
+}
+
+Pass
+{
+    Blend SrcAlpha OneMinusSrcAlpha
+    ZWrite Off
+    // ...
+}</pre>
+                </div>
+
+                <div class="section">
+                    <h2">📋 常用 Tags</h2>
+                    
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Tag</th>
+                                <th>值</th>
+                                <th>说明</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>RenderType</td>
+                                <td>Opaque / Transparent</td>
+                                <td>渲染类型</td>
+                            </tr>
+                            <tr>
+                                <td>Queue</td>
+                                <td>Geometry / Transparent</td>
+                                <td>渲染顺序</td>
+                            </tr>
+                            <tr>
+                                <td>RenderPipeline</td>
+                                <td>UniversalPipeline</td>
+                                <td>指定管线</td>
+                            </tr>
+                            <tr>
+                                <td>LightMode</td>
+                                <td>UniversalForward</td>
+                                <td>Pass 类型</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

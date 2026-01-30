@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UV 缩放 - Unity URP 2022 LTS 教程</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>URP 教程</h1>
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3>🎨 UV 变换</h3>
+                    <ul>
+                        <li><a href="rotate-uv.html">RotateUV - 旋转矩阵</a></li>
+                        <li><a href="uv-scroll.html">UV 滚动</a></li>
+                        <li><a href="uv-scale.html" class="active">UV 缩放</a></li>
+                        <li><a href="uv-offset.html">UV 偏移</a></li>
+                        <li><a href="uv-animation.html">UV 动画</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="function-page">
+                <h1>UV 缩放 (UV Scaling)</h1>
+                <p class="subtitle">控制纹理的平铺密度</p>
+
+                <div class="section">
+                    <h2>📚 原理</h2>
+                    <p>UV 缩放通过乘以一个系数来改变纹理的平铺次数。缩放值 > 1 会使纹理重复更多次（显得更小），缩放值 < 1 则相反。</p>
+                    
+                    <div class="comparison-box">
+                        <div class="compare-item">
+                            <h4>Scale = 1.0</h4>
+                            <div class="uv-demo" style="background: repeating-linear-gradient(45deg, #333 0px, #333 10px, #444 10px, #444 20px);">原始大小</div>
+                        </div>
+                        <div class="compare-item">
+                            <h4>Scale = 2.0</h4>
+                            <div class="uv-demo" style="background: repeating-linear-gradient(45deg, #333 0px, #333 5px, #444 5px, #444 10px);">纹理更密</div>
+                        </div>
+                        <div class="compare-item">
+                            <h4>Scale = 0.5</h4>
+                            <div class="uv-demo" style="background: repeating-linear-gradient(45deg, #333 0px, #333 20px, #444 20px, #444 40px);">纹理更稀</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>💻 代码实现</h2>
+                    
+                    <h3>基础缩放</h3>
+                    <pre class="shader-code">// Properties
+_TilingScale("Tiling Scale", Vector) = (1, 1, 0, 0)
+
+half4 frag(Varyings input) : SV_Target
+{
+    // 应用缩放
+    float2 scaledUV = input.uv * _TilingScale.xy;
+    
+    half4 color = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, scaledUV);
+    return color;
+}</pre>
+
+                    <h3>从中心缩放</h3>
+                    <pre class="shader-code">float2 ScaleFromCenter(float2 uv, float2 scale)
+{
+    // 移到中心
+    float2 centered = uv - 0.5;
+    // 缩放
+    centered *= scale;
+    // 移回
+    return centered + 0.5;
+}</pre>
+
+                    <h3>Unity 内置 Tiling</h3>
+                    <pre class="shader-code">// 使用 _BaseMap_ST (内置变量)
+// xy = tiling, zw = offset
+float2 scaledUV = input.uv * _BaseMap_ST.xy + _BaseMap_ST.zw;
+
+// 或使用宏
+float2 scaledUV = TRANSFORM_TEX(input.uv, _BaseMap);</pre>
+                </div>
+
+                <div class="section">
+                    <h2>🎮 应用场景</h2>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>🧱 平铺纹理</h3>
+                            <p>地面、墙壁等大面积平铺</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>🔍 细节调整</h3>
+                            <p>同材质不同细节密度</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h3>📐 宽高比适配</h3>
+                            <p>非正方形表面的纹理适配</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>💡 技巧</h2>
+                    
+                    <div class="tip-box">
+                        <h4>世界空间 UV</h4>
+                        <p>对于地形等大物体，可以使用世界空间位置生成 UV，避免拉伸：</p>
+                        <pre class="shader-code">float2 worldUV = input.positionWS.xz * _WorldTiling;</pre>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/shader-highlight.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>
